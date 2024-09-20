@@ -27,18 +27,17 @@ public:
 
 	UFUNCTION(Exec)
 	void ConnectToServer(const FString& IPAddress, int32 Port);
-	
-	void PollConnection();
 
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void SetupInputComponent() override;
 	virtual void Tick(float DeltaSeconds) override;
-	void SendMessageToServer(const FString& Message);
 
 	UFUNCTION()
 	void OnShowEscapeMenu(const FInputActionValue& Value);
+	void LeftMouseClick(const FInputActionValue& Value);
+	void FindActorAndExecute();
 
 private:
 	HSteamNetConnection ServerConnection;
@@ -54,6 +53,4 @@ private:
 
 	UPROPERTY()
 	UEscapeMenu* EscapeMenu;
-
-	STEAM_CALLBACK(AClientPlayerController, OnNetConnectionStatusChanged, SteamNetConnectionStatusChangedCallback_t);
 };

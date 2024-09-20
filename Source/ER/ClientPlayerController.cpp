@@ -5,6 +5,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputMappingContext.h"
 #include "InputData.h"
+#include "SpawnActor.h"
 #include "Blueprint/UserWidget.h"
 #include "UI/EscapeMenu.h"
 #include "Steam/steam_api.h"
@@ -113,27 +114,6 @@ void AClientPlayerController::ConnectToServer(const FString& IPAddress, int32 Po
 	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Green, FString::Printf(TEXT("Connecting to server at %s:%d"), *IPAddress, Port));
 }
 
-void AClientPlayerController::PollConnection()
-{
-	/*if (ServerConnection == k_HSteamNetConnection_Invalid)
-	{
-		return;
-	}
-
-	ISteamNetworkingMessage* IncomingMsg = nullptr;
-	int NumMessages = SteamNetworkingSockets()->ReceiveMessagesOnConnection(ServerConnection, &IncomingMsg, 1);
-
-	if (NumMessages > 0 && IncomingMsg)
-	{
-		FString ReceivedData = ANSI_TO_TCHAR((const char*)IncomingMsg->m_pData);
-		UE_LOG(LogTemp, Log, TEXT("Received Message from Server: %s"), *ReceivedData);
-
-		// You can process the received data here
-
-		IncomingMsg->Release();
-	}*/
-}
-
 void AClientPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
@@ -149,7 +129,17 @@ void AClientPlayerController::SetupInputComponent()
 			}
 			else
 			{
-				UE_LOG(LogTemp, Warning, TEXT("ShowServerBrowser is null."));
+				UE_LOG(LogTemp, Warning, TEXT("ShowEscapeMenu is null."));
+			}
+
+			if (InputData->LeftMouseClick)
+			{
+				EnhancedInputComponent->BindAction(InputData->LeftMouseClick, ETriggerEvent::Completed, this, &AClientPlayerController::LeftMouseClick);
+				UE_LOG(LogTemp, Log, TEXT("Left Mouse Click action bound."));
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("LeftMouseClick is null."));
 			}
 		}
 		else
@@ -167,33 +157,10 @@ void AClientPlayerController::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	//PollConnection();
+	SetShowMouseCursor(true);
 	
 	// Handles Steam callbacks on the client
 	SteamAPI_RunCallbacks();
-}
-
-void AClientPlayerController::OnNetConnectionStatusChanged(SteamNetConnectionStatusChangedCallback_t* pInfo)
-{
-	switch (pInfo->m_info.m_eState)
-	{
-	case k_ESteamNetworkingConnectionState_Connected:
-		UE_LOG(LogTemp, Log, TEXT("Connected to Server"));
-		break;
-
-	case k_ESteamNetworkingConnectionState_ClosedByPeer:
-	case k_ESteamNetworkingConnectionState_ProblemDetectedLocally:
-		UE_LOG(LogTemp, Log, TEXT("Connection to Server Closed"));
-		ServerConnection = k_HSteamNetConnection_Invalid;
-		break;
-
-	default:
-		break;
-	}
-}
-
-void AClientPlayerController::SendMessageToServer(const FString& Message)
-{
 }
 
 void AClientPlayerController::OnShowEscapeMenu(const FInputActionValue& Value)
@@ -227,4 +194,50 @@ void AClientPlayerController::OnShowEscapeMenu(const FInputActionValue& Value)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Escape Menu Widget is null."));
 	}
+}
+
+void AClientPlayerController::LeftMouseClick(const FInputActionValue& Value)
+{
+	//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("Left Mouse Click Event"));
+
+	FindActorAndExecute();
+}
+
+void AClientPlayerController::FindActorAndExecute()
+{
+		FVector WorldLocation, WorldDirection;
+
+		if (DeprojectMousePositionToWorld(WorldLocation, WorldDirection))
+		{
+			// Perform a line trace from the mouse cursor position
+			FVector Start = WorldLocation;
+			FVector End = Start + (WorldDirection * 10000.0f);
+
+			FHitResult HitResult;
+			FCollisionQueryParams CollisionParams;
+
+			bool bHit = GetWorld()->LineTraceSingleByChannel(
+				HitResult,
+				Start,
+				End,
+				ECC_Visibility,
+				CollisionParams
+			);
+
+			if (bHit)
+			{
+				AActor* HitActor = HitResult.GetActor();
+				if (HitActor && HitActor->IsA<ASpawnActor>())
+				{
+					ASpawnActor* Spawner = Cast<ASpawnActor>(HitActor);
+					if (Spawner)
+					{
+						Spawner->ShowSpawnMenu();
+					}
+				}
+
+				// Just a useful visual that is needed for now
+				DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 1.0f, 0, 1.0f);
+			}
+		}
 }

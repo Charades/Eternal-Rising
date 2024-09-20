@@ -39,50 +39,50 @@ void AServerGameMode::BeginDestroy()
 
 void AServerGameMode::InitSteamServer()
 {
-	// uint32 ip = 0; // Use INADDR_ANY to bind to all available network interfaces
-	// uint16 gamePort = 7777; // ER Server Port
-	// uint16 queryPort = 27016; // Master Server Update Port
-	// EServerMode serverMode = eServerModeAuthenticationAndSecure; // The server mode
-	// const char* version = "1.0.0.0"; // Your game version
-	//
-	// if (SteamGameServer_Init(ip, gamePort, queryPort, serverMode, version))
-	// {
-	// 	UE_LOG(LogTemp, Log, TEXT("Steam game server initialized successfully"));
-	//
-	// 	// Initialize server settings
-	// 	// Todo: Make these variables stored in a config file
-	// 	SteamGameServer()->SetServerName("ER Test");
-	// 	SteamGameServer()->SetProduct("ER");
-	// 	SteamGameServer()->SetGameDescription("Senior Project");
-	// 	SteamGameServer()->SetModDir("spacewar");
-	// 	SteamGameServer()->SetMaxPlayerCount(MAX_PLAYERS_PER_SERVER);
-	// 	SteamGameServer()->SetGameTags("ERTest");
-	// 	
-	// 	FString MapName = GetMapName();
-	// 	UE_LOG(LogTemp, Warning, TEXT("Map name: %s"), *MapName);
-	// 	SteamGameServer()->SetMapName(TCHAR_TO_ANSI(*MapName));
-	// 	
-	// 	// Call SetDedicatedServer before LogOnAnonymous
-	// 	SteamGameServer()->SetDedicatedServer(true);
-	// 	SteamGameServer()->LogOnAnonymous();
-	//
-	// 	// Begin heartbeats to the Steam master server
-	// 	SteamGameServer()->SetAdvertiseServerActive(true);
-	// }
-	// else
-	// {
-	// 	UE_LOG(LogTemp, Error, TEXT("Failed to initialize Steam game server"));
-	// }
-	//
-	// SteamNetworkingIPAddr serverAddr;
-	// serverAddr.Clear();
-	// serverAddr.SetIPv4(ip, gamePort); // Replace with your server IP and port
-	// ListenSocket = SteamGameServerNetworkingSockets()->CreateListenSocketIP(serverAddr, 0, nullptr);
-	// PollGroup = SteamGameServerNetworkingSockets()->CreatePollGroup();
-	//
-	// UE_LOG(LogTemp, Log, TEXT("Set Listen Socket and Poll Group"));
+	 uint32 ip = 0; // Use INADDR_ANY to bind to all available network interfaces
+	 uint16 gamePort = 7777; // ER Server Port
+	 uint16 queryPort = 27016; // Master Server Update Port
+	 EServerMode serverMode = eServerModeAuthenticationAndSecure; // The server mode
+	 const char* version = "1.0.0.0"; // Your game version
+	
+	 if (SteamGameServer_Init(ip, gamePort, queryPort, serverMode, version))
+	 {
+	 	UE_LOG(LogTemp, Log, TEXT("Steam game server initialized successfully"));
+	
+	 	// Initialize server settings
+	 	// Todo: Make these variables stored in a config file
+	 	SteamGameServer()->SetServerName("ER Test");
+	 	SteamGameServer()->SetProduct("ER");
+	 	SteamGameServer()->SetGameDescription("Senior Project");
+	 	SteamGameServer()->SetModDir("spacewar");
+	 	SteamGameServer()->SetMaxPlayerCount(MAX_PLAYERS_PER_SERVER);
+	 	SteamGameServer()->SetGameTags("ERTest");
+	 	
+	 	FString MapName = GetMapName();
+	 	UE_LOG(LogTemp, Warning, TEXT("Map name: %s"), *MapName);
+	 	SteamGameServer()->SetMapName(TCHAR_TO_ANSI(*MapName));
+	 	
+	 	// Call SetDedicatedServer before LogOnAnonymous
+	 	SteamGameServer()->SetDedicatedServer(true);
+	 	SteamGameServer()->LogOnAnonymous();
+	
+	 	// Begin heartbeats to the Steam master server
+		SteamGameServer()->SetAdvertiseServerActive(true);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to initialize Steam game server"));
+	}
+	
+	SteamNetworkingIPAddr serverAddr;
+	serverAddr.Clear();
+	serverAddr.SetIPv4(ip, gamePort); // Replace with your server IP and port
+	ListenSocket = SteamGameServerNetworkingSockets()->CreateListenSocketIP(serverAddr, 0, nullptr);
+	PollGroup = SteamGameServerNetworkingSockets()->CreatePollGroup();
+	
+	UE_LOG(LogTemp, Log, TEXT("Set Listen Socket and Poll Group"));
 
-	IOnlineSubsystem* OnlineSub = IOnlineSubsystem::Get(STEAM_SUBSYSTEM);
+	/*IOnlineSubsystem* OnlineSub = IOnlineSubsystem::Get(STEAM_SUBSYSTEM);
 	OnlineSub->SetForceDedicated(true);
 	if (OnlineSub)
 	{
@@ -109,7 +109,7 @@ void AServerGameMode::InitSteamServer()
 	else
 	{
 		UE_LOG(LogTemp, Warning, TEXT("OnlineSubsystemSteam is not available"));
-	}
+	}*/
 }
 
 void AServerGameMode::OnCreateSessionComplete(FName SessionName, bool bWasSuccessful)
@@ -431,19 +431,19 @@ void AServerGameMode::OnStartOnlineGameComplete(FName SessionName, bool bWasSucc
 // 	}
 // }
 //
-// FString AServerGameMode::GetMapName() const
-// {
-// 	UWorld* World = GetWorld();
-// 	if (World)
-// 	{
-// 		FString MapName = World->GetMapName();
-// 		// Remove any prefix like "/Game/Maps/" if needed
-// 		MapName.RemoveFromStart(World->StreamingLevelsPrefix);
-// 		return MapName;
-// 	}
-// 	return FString("Unknown");
-// }
-//
+ FString AServerGameMode::GetMapName() const
+ {
+ 	UWorld* World = GetWorld();
+ 	if (World)
+ 	{
+		FString MapName = World->GetMapName();
+ 		// Remove any prefix like "/Game/Maps/" if needed
+ 		MapName.RemoveFromStart(World->StreamingLevelsPrefix);
+ 		return MapName;
+ 	}
+ 	return FString("Unknown");
+ }
+
 void AServerGameMode::ShutdownSteamServer()
 {
 	SteamGameServerNetworkingSockets()->CloseListenSocket(ListenSocket);

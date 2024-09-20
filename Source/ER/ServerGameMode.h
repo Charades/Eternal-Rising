@@ -49,7 +49,8 @@ private:
 	
 	virtual void OnCreateSessionComplete(FName SessionName, bool bWasSuccessful);
 	void OnStartOnlineGameComplete(FName SessionName, bool bWasSuccessful);
-	
+	FString GetMapName() const;
+
 	// void SendUpdatedServerDetailsToSteam();
 	// void RemovePlayerFromServer(uint32 PlayerIndex, EDisconnectReason Reason);
 	// bool SendDataToClient(uint32 PlayerIndex, char *Data, uint32 SizeOfData);
@@ -64,8 +65,6 @@ private:
 	// STEAM_GAMESERVER_CALLBACK( AServerGameMode, OnPolicyResponse, GSPolicyResponse_t );
 	// STEAM_GAMESERVER_CALLBACK( AServerGameMode, OnValidateAuthTicketResponse, ValidateAuthTicketResponse_t );
 	// STEAM_GAMESERVER_CALLBACK( AServerGameMode, OnNetConnectionStatusChanged, SteamNetConnectionStatusChangedCallback_t );
-	
-	//FString GetMapName() const;
 
 	struct ClientConnectionData
 	{
