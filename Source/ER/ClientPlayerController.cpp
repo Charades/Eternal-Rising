@@ -200,10 +200,10 @@ void AClientPlayerController::LeftMouseClick(const FInputActionValue& Value)
 {
 	//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("Left Mouse Click Event"));
 
-	FindActorAndExecute();
+	ActorHitResults();
 }
 
-void AClientPlayerController::FindActorAndExecute()
+void AClientPlayerController::ActorHitResults()
 {
 		FVector WorldLocation, WorldDirection;
 

@@ -37,7 +37,7 @@ protected:
 	UFUNCTION()
 	void OnShowEscapeMenu(const FInputActionValue& Value);
 	void LeftMouseClick(const FInputActionValue& Value);
-	void FindActorAndExecute();
+	void ActorHitResults();
 
 private:
 	HSteamNetConnection ServerConnection;
