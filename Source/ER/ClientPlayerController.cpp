@@ -230,9 +230,43 @@ void AClientPlayerController::ActorHitResults()
 				if (HitActor && HitActor->IsA<ASpawnActor>())
 				{
 					ASpawnActor* Spawner = Cast<ASpawnActor>(HitActor);
+
+					TArray<AActor*> FoundActors;
+					UGameplayStatics::GetAllActorsOfClass(GetWorld(), ASpawnActor::StaticClass(), FoundActors);
+
+					for (AActor* Actor : FoundActors)
+					{
+						ASpawnActor* CustomActor = Cast<ASpawnActor>(Actor);
+						if (CustomActor && CustomActor->ShowSpawnMenu(false))
+						{
+							// Material was reverted successfully
+							UE_LOG(LogTemp, Warning, TEXT("Material reverted on %s"), *CustomActor->GetName());
+						}
+					}
+					
 					if (Spawner)
 					{
-						Spawner->ShowSpawnMenu();
+						if (!Spawner->ShowSpawnMenu(true))
+						{
+							// Already using new material, so toggle back to the original
+							Spawner->ShowSpawnMenu(false);
+						}
+					}
+				}
+				else
+				{
+					// No valid custom actor was hit, toggle all actors back to their original material
+					TArray<AActor*> FoundActors;
+					UGameplayStatics::GetAllActorsOfClass(GetWorld(), ASpawnActor::StaticClass(), FoundActors);
+
+					for (AActor* Actor : FoundActors)
+					{
+						ASpawnActor* CustomActor = Cast<ASpawnActor>(Actor);
+						if (CustomActor && CustomActor->ShowSpawnMenu(false))
+						{
+							// Material was reverted successfully
+							UE_LOG(LogTemp, Warning, TEXT("Material reverted on %s"), *CustomActor->GetName());
+						}
 					}
 				}
 
