@@ -73,7 +73,3 @@ Plugins/**/Intermediate/*
 
 # Cache files for the editor to use
 DerivedDataCache/*
-/Plugins/Developer/RiderLink
-/.idea
-Saved/Config/WindowsEditor/EditorPerProjectUserSettings.ini
-/Saved/Config/CrashReportClient
