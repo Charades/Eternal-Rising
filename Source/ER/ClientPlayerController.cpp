@@ -16,7 +16,7 @@ AClientPlayerController::AClientPlayerController()
 {
 	// Find the InputMappingContext asset in the content browser
 	static ConstructorHelpers::FObjectFinder<UInputMappingContext> MappingContextFinder(
-		TEXT("/Game/GameContent/Blueprints/IMC_Default"));
+		TEXT("/Game/Input/IMC_Default"));
 	if (MappingContextFinder.Succeeded())
 	{
 		DefaultMappingContext = MappingContextFinder.Object;
@@ -25,7 +25,7 @@ AClientPlayerController::AClientPlayerController()
 
 	// Find the InputActionDataAsset in the content browser
 	static ConstructorHelpers::FObjectFinder<UInputData> InputDataAssetFinder(
-		TEXT("/Game/GameContent/Blueprints/DA_InputActions"));
+		TEXT("/Game/Data/DA_InputActions"));
 	if (InputDataAssetFinder.Succeeded())
 	{
 		InputData = InputDataAssetFinder.Object;
@@ -33,7 +33,7 @@ AClientPlayerController::AClientPlayerController()
 	}
 
 	static ConstructorHelpers::FClassFinder<UUserWidget> EscapeMenuWidgetFinder(
-		TEXT("/Game/GameContent/Blueprints/EscapeMenu"));
+		TEXT("/Game/Blueprints/UI/EscapeMenu"));
 	if (EscapeMenuWidgetFinder.Succeeded())
 	{
 		EscapeMenuWidget = EscapeMenuWidgetFinder.Class;
