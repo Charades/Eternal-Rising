@@ -7,7 +7,7 @@
 UEscapeMenu::UEscapeMenu(const FObjectInitializer& ObjectInitializer): Super(ObjectInitializer)
 {
 	static ConstructorHelpers::FClassFinder<UServerBrowser> ServerBrowserWidgetFinder(
-	TEXT("/Game/GameContent/Blueprints/ServerBrowser"));
+	TEXT("/Game/Blueprints/UI/ServerBrowser"));
 	if (ServerBrowserWidgetFinder.Succeeded())
 	{
 		ServerBrowserWidget = ServerBrowserWidgetFinder.Class;
