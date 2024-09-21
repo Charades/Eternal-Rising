@@ -178,14 +178,14 @@ void AClientPlayerController::OnShowEscapeMenu(const FInputActionValue& Value)
 			{
 				EscapeMenu->RemoveFromParent();
 				EscapeMenu = nullptr;
-				SetShowMouseCursor(false);
+				//SetShowMouseCursor(false);
 				SetInputMode(FInputModeGameOnly());
 			}
 			else
 			{
 				EscapeMenu->AddToViewport();
 				UE_LOG(LogTemp, Log, TEXT("Escape Menu Widget displayed."));
-				SetShowMouseCursor(true);
+				//SetShowMouseCursor(true);
 				SetInputMode(FInputModeGameAndUI());
 			}
 		}

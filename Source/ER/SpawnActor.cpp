@@ -2,7 +2,7 @@
 
 
 #include "SpawnActor.h"
-
+#include "FlecsSubsystem.h"
 
 // Sets default values
 ASpawnActor::ASpawnActor()
@@ -77,6 +77,24 @@ void ASpawnActor::SpawnPoints(float Radius, int32 NumberOfPoints)
 		// Calculate the final position by adding the offsets to the actor's location
 		FVector PointLocation = ActorLocation + FVector(X, Y, 0.0f);
 
+		if (GetGameInstance())
+		{
+			// Get the subsystem and call the function
+			UFlecsSubsystem* MySubsystem = GetGameInstance()->GetSubsystem<UFlecsSubsystem>();
+
+			if (MySubsystem)
+			{
+				MySubsystem->SpawnZombieEntity(PointLocation, FRotator(0,0,0));
+			}
+			else
+			{
+				if (GEngine)
+				{
+					GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, TEXT("Subsystem not found!"));
+				}
+			}
+		}
+		
 		// Debug for now, replace with zombie entities in the future
 		DrawDebugSphere(
 			GetWorld(),
