@@ -14,6 +14,7 @@ void UFlecsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	char name[] = { "Eternal Rising Flecs System" };
 	char* argv = name;
 	ECSWorld = new flecs::world(1, &argv);
+	GetEcsWorld()->import<flecs::timer>();
 	
 	//Comment out the Flecs monitor if you're not using it due to performance overhead
 	//https://www.flecs.dev/explorer/v3/
@@ -41,24 +42,27 @@ void UFlecsSubsystem::InitFlecs(UStaticMesh* InMesh)
 	ZombieRenderer->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	ZombieRenderer->SetCanEverAffectNavigation(false);
 	ZombieRenderer->NumCustomDataFloats = 2;
-
-	auto system_set_zombie_pos = GetEcsWorld()->system<FlecsZombie, FlecsISMIndex, FlecsIsmRef>("Zombie Renderer System")
+	
+	// Optimized to run every two seconds but could be optimized further by batching
+	auto system_adjust_entity_height = GetEcsWorld()->system<FlecsZombie, FlecsISMIndex, FlecsIsmRef>("Zombie Adjust Height")
+	.interval(2.0)
 	.iter([](flecs::iter it, FlecsZombie* fw, FlecsISMIndex* fi, FlecsIsmRef* fr) {
 		for (int i : it) {
 			auto index = fi[i].Value;
-			
 			FTransform InstanceTransform;
 			fr[i].Value->GetInstanceTransform(index, InstanceTransform, true);
 
 			FVector InstanceLocation = InstanceTransform.GetLocation();
 			FHitResult HitResult;
+
+			// Trace downwards
 			FVector Start = InstanceLocation;
-			FVector End = Start - FVector(0.f, 0.f, 1000.f);  // Trace downwards
+			FVector End = Start - FVector(0.f, 0.f, 1000.f); 
 
+			// Ignore the owning actor
 			FCollisionQueryParams QueryParams;
-			QueryParams.AddIgnoredActor(fr[i].Value->GetOwner());  // Ignore the owning actor
-
-			// Use GetWorld() after capturing 'this'
+			QueryParams.AddIgnoredActor(fr[i].Value->GetOwner());
+		
 			if (fr[i].Value->GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_Visibility, QueryParams))
 			{
 				// Adjust the instance position to the hit point

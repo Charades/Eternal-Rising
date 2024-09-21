@@ -11,6 +11,10 @@ struct FlecsTransform
 	FTransform Value;
 };
 
+struct FlecsLastTraceTime {
+	float LastTraceTime = 0.0f;
+};
+
 struct FlecsZombie
 {
 	FVector Position;
@@ -45,7 +49,7 @@ UCLASS()
 class ER_API UFlecsSubsystem : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()
-
+	
 public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
