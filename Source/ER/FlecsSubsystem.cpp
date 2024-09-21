@@ -16,7 +16,7 @@ void UFlecsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	ECSWorld = new flecs::world(1, &argv);
 	
 	//Comment out the Flecs monitor if you're not using it due to performance overhead
-	//https://www.flecs.dev/explorer/
+	//https://www.flecs.dev/explorer/v3/
 	GetEcsWorld()->import<flecs::monitor>();
 	GetEcsWorld()->set<flecs::Rest>({});
 	
@@ -41,6 +41,35 @@ void UFlecsSubsystem::InitFlecs(UStaticMesh* InMesh)
 	ZombieRenderer->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	ZombieRenderer->SetCanEverAffectNavigation(false);
 	ZombieRenderer->NumCustomDataFloats = 2;
+
+	auto system_set_zombie_pos = GetEcsWorld()->system<FlecsZombie, FlecsISMIndex, FlecsIsmRef>("Zombie Renderer System")
+	.iter([](flecs::iter it, FlecsZombie* fw, FlecsISMIndex* fi, FlecsIsmRef* fr) {
+		for (int i : it) {
+			auto index = fi[i].Value;
+			
+			FTransform InstanceTransform;
+			fr[i].Value->GetInstanceTransform(index, InstanceTransform, true);
+
+			FVector InstanceLocation = InstanceTransform.GetLocation();
+			FHitResult HitResult;
+			FVector Start = InstanceLocation;
+			FVector End = Start - FVector(0.f, 0.f, 1000.f);  // Trace downwards
+
+			FCollisionQueryParams QueryParams;
+			QueryParams.AddIgnoredActor(fr[i].Value->GetOwner());  // Ignore the owning actor
+
+			// Use GetWorld() after capturing 'this'
+			if (fr[i].Value->GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_Visibility, QueryParams))
+			{
+				// Adjust the instance position to the hit point
+				InstanceLocation.Z = HitResult.Location.Z;
+				InstanceTransform.SetLocation(InstanceLocation);
+
+				// Update the instance's transform
+				fr[i].Value->UpdateInstanceTransform(index, InstanceTransform, true, true, true);
+			}
+		}
+	});
 	
 	UE_LOG(LogTemp, Warning, TEXT("Flecs Horde System Initialized!"));
 }
