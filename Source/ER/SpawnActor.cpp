@@ -65,46 +65,18 @@ void ASpawnActor::SpawnPoints(float Radius, int32 NumberOfPoints)
 	// Get the location of this actor
 	FVector ActorLocation = GetActorLocation();
 
-	for (int32 i = 0; i < NumberOfPoints; i++)
+	UFlecsSubsystem* MySubsystem = GetGameInstance()->GetSubsystem<UFlecsSubsystem>();
+
+	if (MySubsystem)
 	{
-		// Calculate the angle for the point
-		float Angle = i * (2 * PI / NumberOfPoints);
-
-		// Calculate the X and Y coordinates
-		float X = FMath::Cos(Angle) * Radius;
-		float Y = FMath::Sin(Angle) * Radius;
-
-		// Calculate the final position by adding the offsets to the actor's location
-		FVector PointLocation = ActorLocation + FVector(X, Y, 0.0f);
-
-		if (GetGameInstance())
+		MySubsystem->SpawnZombieHorde(ActorLocation, Radius, NumberOfPoints);
+	}
+	else
+	{
+		if (GEngine)
 		{
-			// Get the subsystem and call the function
-			UFlecsSubsystem* MySubsystem = GetGameInstance()->GetSubsystem<UFlecsSubsystem>();
-
-			if (MySubsystem)
-			{
-				MySubsystem->SpawnZombieEntity(PointLocation, FRotator(0,0,0));
-			}
-			else
-			{
-				if (GEngine)
-				{
-					GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, TEXT("Subsystem not found!"));
-				}
-			}
+			GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, TEXT("Subsystem not found!"));
 		}
-		
-		// Debug for now, replace with zombie entities in the future
-		DrawDebugSphere(
-			GetWorld(),
-			PointLocation,            // Location of the debug sphere
-			20.0f,                    // Sphere radius
-			12,                       // Number of segments
-			FColor::Red,              // Sphere color
-			false,                    // Persistent (false means it will disappear after a short time)
-			10.0f                     // Lifetime of the sphere
-		);
 	}
 }
 

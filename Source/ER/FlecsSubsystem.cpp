@@ -1,5 +1,7 @@
 ﻿#include "FlecsSubsystem.h"
 
+#include "Components/HierarchicalInstancedStaticMeshComponent.h"
+
 
 flecs::world* UFlecsSubsystem::GetEcsWorld() const
 {
@@ -32,101 +34,117 @@ void UFlecsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 void UFlecsSubsystem::InitFlecs(UStaticMesh* InMesh)
 {
-	// Spawn an actor and add an Instanced Static Mesh component to it.
-	// Renders the entities
+	DefaultMesh = InMesh;
+	
+	 //Optimized to run every two seconds but could be optimized further by batching
+	 auto system_adjust_entity_height = GetEcsWorld()->system<FlecsZombie, FlecsISMIndex, FlecsIsmRef>("Zombie Adjust Height")
+	 .interval(2.0)
+	 .iter([](flecs::iter it, FlecsZombie* fw, FlecsISMIndex* fi, FlecsIsmRef* fr) {
+	 	for (int i : it) {
+	 		auto index = fi[i].Value;
+	 		FTransform InstanceTransform;
+	 		
+	 		fr[i].Value->GetInstanceTransform(index, InstanceTransform, true);
+	
+	 		FVector InstanceLocation = InstanceTransform.GetLocation();
+	 		FHitResult HitResult;
+	
+	 		// Trace downwards
+	 		FVector Start = InstanceLocation;
+	 		FVector End = Start - FVector(0.f, 0.f, 1000.f); 
+	
+	 		// Ignore the owning actor
+	 		FCollisionQueryParams QueryParams;
+	 		QueryParams.AddIgnoredActor(fr[i].Value->GetOwner());
+	 	
+	 		if (fr[i].Value->GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_Visibility, QueryParams))
+	 		{
+	 			// Adjust the instance position to the hit point
+	 			InstanceLocation.Z = HitResult.Location.Z;
+	 			InstanceTransform.SetLocation(InstanceLocation);
+	
+	 			// Update the instance's transform
+	 			fr[i].Value->UpdateInstanceTransform(index, InstanceTransform, true, true, true);
+	 		}
+	 	}
+	 });
+
+	 auto system_move_to_position = GetEcsWorld()->system<FlecsZombie, FlecsISMIndex, FlecsIsmRef>("Zombie Movement System")
+	 	.iter([](flecs::iter it, FlecsZombie* fw, FlecsISMIndex* fi, FlecsIsmRef* fr) {
+	 		for (int i : it)
+	 		{
+	 		}
+	});
+	
+	UE_LOG(LogTemp, Warning, TEXT("Flecs Horde System Initialized!"));
+}
+
+// This function spawns a pawn and assigns it an instanced static mesh component.
+void UFlecsSubsystem::SpawnZombieHorde(FVector SpawnLocation, float Radius, int32 NumEntities)
+{
+	if (!DefaultMesh.IsValid())
+	{
+		UE_LOG(LogTemp, Error, TEXT("DefaultMesh is not valid! Make sure it's set correctly."));
+		return;
+	}
+
+	// Spawn a new pawn for this horde
 	FActorSpawnParameters SpawnInfo;
 	SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	ZombieRenderer = Cast<UInstancedStaticMeshComponent>((GetWorld()->SpawnActor(AActor::StaticClass(), &FVector::ZeroVector, &FRotator::ZeroRotator, SpawnInfo))->AddComponentByClass(UInstancedStaticMeshComponent::StaticClass(), false, FTransform(FVector::ZeroVector), false));
-	ZombieRenderer->SetStaticMesh(InMesh);
+	AFlecsZombieHorde* NewHorde = GetWorld()->SpawnActor<AFlecsZombieHorde>(AFlecsZombieHorde::StaticClass(), SpawnLocation, FRotator::ZeroRotator, SpawnInfo);
+
+	if (!NewHorde)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to spawn AFlecsZombieHorde!"));
+		return;
+	}
+
+	// Create a new ISM component for this horde
+	UHierarchicalInstancedStaticMeshComponent* ZombieRenderer = NewObject<UHierarchicalInstancedStaticMeshComponent>(NewHorde);
+	if (!ZombieRenderer)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to create UInstancedStaticMeshComponent."));
+		NewHorde->Destroy();
+		return;
+	}
+
+	// Set up the new ISM component
+	ZombieRenderer->SetupAttachment(NewHorde->GetRootComponent());
+	ZombieRenderer->RegisterComponent();
+	ZombieRenderer->SetStaticMesh(DefaultMesh.Get());
 	ZombieRenderer->bUseDefaultCollision = false;
 	ZombieRenderer->SetGenerateOverlapEvents(false);
 	ZombieRenderer->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	ZombieRenderer->SetCanEverAffectNavigation(false);
 	ZombieRenderer->NumCustomDataFloats = 2;
-	
-	// Optimized to run every two seconds but could be optimized further by batching
-	auto system_adjust_entity_height = GetEcsWorld()->system<FlecsZombie, FlecsISMIndex, FlecsIsmRef>("Zombie Adjust Height")
-	.interval(2.0)
-	.iter([](flecs::iter it, FlecsZombie* fw, FlecsISMIndex* fi, FlecsIsmRef* fr) {
-		for (int i : it) {
-			auto index = fi[i].Value;
-			FTransform InstanceTransform;
-			
-			fr[i].Value->GetInstanceTransform(index, InstanceTransform, true);
 
-			FVector InstanceLocation = InstanceTransform.GetLocation();
-			FHitResult HitResult;
-
-			// Trace downwards
-			FVector Start = InstanceLocation;
-			FVector End = Start - FVector(0.f, 0.f, 1000.f); 
-
-			// Ignore the owning actor
-			FCollisionQueryParams QueryParams;
-			QueryParams.AddIgnoredActor(fr[i].Value->GetOwner());
-		
-			if (fr[i].Value->GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_Visibility, QueryParams))
-			{
-				// Adjust the instance position to the hit point
-				InstanceLocation.Z = HitResult.Location.Z;
-				InstanceTransform.SetLocation(InstanceLocation);
-
-				// Update the instance's transform
-				fr[i].Value->UpdateInstanceTransform(index, InstanceTransform, true, true, true);
-			}
-		}
-	});
-
-	// auto system_move_to_position = GetEcsWorld()->system<FlecsZombie, FlecsISMIndex, FlecsIsmRef>("Zombie Movement System")
-	// 	.iter([](flecs::iter it, FlecsZombie* fw, FlecsISMIndex* fi, FlecsIsmRef* fr) {
-	// 		for (int i : it)
-	// 		{
-	// 		}
-	//});
-	
-	UE_LOG(LogTemp, Warning, TEXT("Flecs Horde System Initialized!"));
-}
-
-FFlecsEntityHandle UFlecsSubsystem::SpawnZombieEntity(FVector location, FRotator rotation)
-{
-	auto IsmID = ZombieRenderer->AddInstance(FTransform(rotation, location));
-	auto entity = GetEcsWorld()->entity()
-	.set<FlecsIsmRef>({ZombieRenderer})
-	.set<FlecsISMIndex>({IsmID})
-	.set<FlecsZombie>({FVector(0,0,0)})
-	.child_of<Horde>()
-	.set_name(StringCast<ANSICHAR>(*FString::Printf(TEXT("Zombie%d"), IsmID)).Get());
-	return FFlecsEntityHandle{int(entity.id())};
-}
-
-// Experimental
-void UFlecsSubsystem::SpawnZombieHorde(UStaticMesh* InMesh, FVector SquadLocation, int32 NumEntities)
-{
-	FActorSpawnParameters SpawnInfo;
-	SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-    
-	AFlecsZombieHorde* SquadPawn = GetWorld()->SpawnActor<AFlecsZombieHorde>(AFlecsZombieHorde::StaticClass(), SquadLocation, FRotator::ZeroRotator, SpawnInfo);
-    
-	// Set the static mesh for rendering zombies
-	SquadPawn->InstancedMeshComponent->SetStaticMesh(InMesh);
-    
-	// Spawn the entities in Flecs and associate them with the Pawn
+	// Spawn zombie entities
 	for (int32 i = 0; i < NumEntities; i++)
 	{
-		FVector EntityLocation = SquadLocation + FVector(i * 100, 0, 0); // Example: Offset each entity by 100 units
-		auto IsmID = SquadPawn->InstancedMeshComponent->AddInstance(FTransform(FRotator::ZeroRotator, EntityLocation));
-        
-		auto entity = GetEcsWorld()->entity()
-			.set<FlecsIsmRef>({SquadPawn->InstancedMeshComponent})
-			.set<FlecsISMIndex>({IsmID})
-			.set<FlecsZombie>({FVector(0,0,0)})
-			.child_of<Horde>()
-			.set_name(StringCast<ANSICHAR>(*FString::Printf(TEXT("Zombie%d"), IsmID)).Get());
+		float Angle = i * (2 * PI / NumEntities);
+		float X = FMath::Cos(Angle) * Radius;
+		float Y = FMath::Sin(Angle) * Radius;
+		FVector PointLocation = SpawnLocation + FVector(X, Y, 0.0f);
 
-		// Add the entity to the Pawn’s list
-		SquadPawn->AddEntityToSquad(entity, IsmID);
+		SpawnZombieEntity(PointLocation, FRotator::ZeroRotator, ZombieRenderer);
+
+		DrawDebugSphere(GetWorld(), PointLocation, 20.0f, 12, FColor::Red, false, 10.0f);
 	}
+}
+
+// This function spawns a single zombie entity and adds it to the instanced static mesh component (ISM)
+void UFlecsSubsystem::SpawnZombieEntity(FVector Location, FRotator Rotation, UHierarchicalInstancedStaticMeshComponent* ZombieRendererInst)
+{
+    // Add the instance of the zombie's mesh to the ISM component
+   auto IsmID = ZombieRendererInst->AddInstance(FTransform(Rotation, Location));
 	
+    // // Create the entity in Flecs
+    auto Entity = GetEcsWorld()->entity()
+        .set<FlecsIsmRef>({ZombieRendererInst})
+        .set<FlecsISMIndex>({IsmID})
+        .set<FlecsZombie>({FVector(0, 0, 0)})
+        .child_of<Horde>()  // Parent it to the horde
+        .set_name(StringCast<ANSICHAR>(*FString::Printf(TEXT("Zombie%d_%d"), IsmID, ZombieRendererInst->GetOwner()->GetUniqueID())).Get());
 }
 
 void UFlecsSubsystem::Deinitialize()

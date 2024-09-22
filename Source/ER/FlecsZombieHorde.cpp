@@ -15,7 +15,6 @@ AFlecsZombieHorde::AFlecsZombieHorde()
 void AFlecsZombieHorde::BeginPlay()
 {
 	Super::BeginPlay();
-	
 }
 
 // Called every frame
@@ -34,4 +33,9 @@ void AFlecsZombieHorde::AddEntityToSquad(flecs::entity Entity, int32 InstanceInd
 {
 	SquadEntities.Add(Entity);
 	InstanceIndices.Add(InstanceIndex);
+	// FActorSpawnParameters SpawnInfo;
+	// SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	// UFlecsSubsystem* FlecsSubsystem = GetGameInstance()->GetSubsystem<UFlecsSubsystem>();
+
+	//auto system_adjust_entity_height = FlecsSubsystem->GetEcsWorld()->system<FlecsZombie, FlecsISMIndex, FlecsIsmRef>("Zombie Adjust Height");
 }

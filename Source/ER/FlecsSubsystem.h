@@ -58,15 +58,17 @@ public:
 	
 	flecs::world* GetEcsWorld() const;
 
-	UPROPERTY(EditAnywhere)
-	UInstancedStaticMeshComponent* ZombieRenderer = nullptr;
+	//UPROPERTY(EditAnywhere)
+	//UInstancedStaticMeshComponent* ZombieRenderer = nullptr;
 
 	UFUNCTION(BlueprintCallable, Category="FLECS")
 	void InitFlecs(UStaticMesh* InMesh);
 
 	UFUNCTION(BlueprintCallable, Category="FLECS")
-	FFlecsEntityHandle SpawnZombieEntity(FVector location, FRotator rotation);
-	void SpawnZombieHorde(UStaticMesh* InMesh, FVector SquadLocation, int32 NumEntities);
+	void SpawnZombieEntity(FVector Location, FRotator Rotation, UHierarchicalInstancedStaticMeshComponent* ZombieRendererInst);
+	void SpawnZombieHorde(FVector SpawnLocation, float Radius, int32 NumEntities);
+	
+	TWeakObjectPtr<UStaticMesh> DefaultMesh;
 
 protected:
 	FTickerDelegate OnTickDelegate;
