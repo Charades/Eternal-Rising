@@ -99,6 +99,36 @@ FFlecsEntityHandle UFlecsSubsystem::SpawnZombieEntity(FVector location, FRotator
 	return FFlecsEntityHandle{int(entity.id())};
 }
 
+// Experimental
+void UFlecsSubsystem::SpawnZombieSquad(UStaticMesh* InMesh, FVector SquadLocation, int32 NumEntities)
+{
+	FActorSpawnParameters SpawnInfo;
+	SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+    
+	AFlecsZombiePawn* SquadPawn = GetWorld()->SpawnActor<AFlecsZombiePawn>(AFlecsZombiePawn::StaticClass(), SquadLocation, FRotator::ZeroRotator, SpawnInfo);
+    
+	// Set the static mesh for rendering zombies
+	SquadPawn->InstancedMeshComponent->SetStaticMesh(InMesh);
+    
+	// Spawn the entities in Flecs and associate them with the Pawn
+	for (int32 i = 0; i < NumEntities; i++)
+	{
+		FVector EntityLocation = SquadLocation + FVector(i * 100, 0, 0); // Example: Offset each entity by 100 units
+		auto IsmID = SquadPawn->InstancedMeshComponent->AddInstance(FTransform(FRotator::ZeroRotator, EntityLocation));
+        
+		auto entity = GetEcsWorld()->entity()
+			.set<FlecsIsmRef>({SquadPawn->InstancedMeshComponent})
+			.set<FlecsISMIndex>({IsmID})
+			.set<FlecsZombie>({FVector(0,0,0)})
+			.child_of<Horde>()
+			.set_name(StringCast<ANSICHAR>(*FString::Printf(TEXT("Zombie%d"), IsmID)).Get());
+
+		// Add the entity to the Pawn’s list
+		SquadPawn->AddEntityToSquad(entity, IsmID);
+	}
+	
+}
+
 void UFlecsSubsystem::Deinitialize()
 {
 	FTSTicker::GetCoreTicker().RemoveTicker(OnTickHandle);

@@ -1,7 +1,7 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "FlecsZombiePawn.h"
+#include "FlecsZombieSquad.h"
 
 
 // Sets default values
@@ -30,3 +30,8 @@ void AFlecsZombiePawn::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 }
 
+void AFlecsZombiePawn::AddEntityToSquad(flecs::entity Entity, int32 InstanceIndex)
+{
+	SquadEntities.Add(Entity);
+	InstanceIndices.Add(InstanceIndex);
+}
