@@ -2,7 +2,9 @@
 
 #include "CoreMinimal.h"
 #include "Components/InstancedStaticMeshComponent.h"
+#include "FlecsZombiePawn.h"
 #include "Subsystems/GameInstanceSubsystem.h"
+#include "FlecsAIController.h"
 #include "flecs.h"
 #include "FlecsSubsystem.generated.h"
 

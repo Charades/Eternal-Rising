@@ -1,5 +1,6 @@
 ﻿#include "FlecsSubsystem.h"
 
+
 flecs::world* UFlecsSubsystem::GetEcsWorld() const
 {
 	return ECSWorld;
@@ -50,6 +51,7 @@ void UFlecsSubsystem::InitFlecs(UStaticMesh* InMesh)
 		for (int i : it) {
 			auto index = fi[i].Value;
 			FTransform InstanceTransform;
+			
 			fr[i].Value->GetInstanceTransform(index, InstanceTransform, true);
 
 			FVector InstanceLocation = InstanceTransform.GetLocation();
@@ -74,6 +76,13 @@ void UFlecsSubsystem::InitFlecs(UStaticMesh* InMesh)
 			}
 		}
 	});
+
+	// auto system_move_to_position = GetEcsWorld()->system<FlecsZombie, FlecsISMIndex, FlecsIsmRef>("Zombie Movement System")
+	// 	.iter([](flecs::iter it, FlecsZombie* fw, FlecsISMIndex* fi, FlecsIsmRef* fr) {
+	// 		for (int i : it)
+	// 		{
+	// 		}
+	//});
 	
 	UE_LOG(LogTemp, Warning, TEXT("Flecs Horde System Initialized!"));
 }
