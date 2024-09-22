@@ -100,12 +100,12 @@ FFlecsEntityHandle UFlecsSubsystem::SpawnZombieEntity(FVector location, FRotator
 }
 
 // Experimental
-void UFlecsSubsystem::SpawnZombieSquad(UStaticMesh* InMesh, FVector SquadLocation, int32 NumEntities)
+void UFlecsSubsystem::SpawnZombieHorde(UStaticMesh* InMesh, FVector SquadLocation, int32 NumEntities)
 {
 	FActorSpawnParameters SpawnInfo;
 	SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
     
-	AFlecsZombiePawn* SquadPawn = GetWorld()->SpawnActor<AFlecsZombiePawn>(AFlecsZombiePawn::StaticClass(), SquadLocation, FRotator::ZeroRotator, SpawnInfo);
+	AFlecsZombieHorde* SquadPawn = GetWorld()->SpawnActor<AFlecsZombieHorde>(AFlecsZombieHorde::StaticClass(), SquadLocation, FRotator::ZeroRotator, SpawnInfo);
     
 	// Set the static mesh for rendering zombies
 	SquadPawn->InstancedMeshComponent->SetStaticMesh(InMesh);

@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/InstancedStaticMeshComponent.h"
-#include "FlecsZombieSquad.h"
+#include "FlecsZombieHorde.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "FlecsAIController.h"
 #include "flecs.h"
@@ -66,7 +66,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category="FLECS")
 	FFlecsEntityHandle SpawnZombieEntity(FVector location, FRotator rotation);
-	void SpawnZombieSquad(UStaticMesh* InMesh, FVector SquadLocation, int32 NumEntities);
+	void SpawnZombieHorde(UStaticMesh* InMesh, FVector SquadLocation, int32 NumEntities);
 
 protected:
 	FTickerDelegate OnTickDelegate;

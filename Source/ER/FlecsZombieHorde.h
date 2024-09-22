@@ -5,23 +5,22 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
 #include "flecs.h"
-#include "FlecsZombieSquad.generated.h"
+#include "FlecsZombieHorde.generated.h"
 
 UCLASS()
-class ER_API AFlecsZombiePawn : public APawn
+class ER_API AFlecsZombieHorde : public APawn
 {
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this pawn's properties
-	AFlecsZombiePawn();
+	AFlecsZombieHorde();
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UInstancedStaticMeshComponent* InstancedMeshComponent;
 
 private:
-	TArray<int32> InstanceIndices; // Store indices of instanced static meshes for this squad
-	TArray<flecs::entity> SquadEntities; // Flecs entities for this squad
+	TArray<int32> InstanceIndices;
+	TArray<flecs::entity> SquadEntities;
 	
 protected:
 	// Called when the game starts or when spawned
