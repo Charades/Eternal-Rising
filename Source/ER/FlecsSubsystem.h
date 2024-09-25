@@ -27,6 +27,11 @@ struct FlecsISMIndex
 	int Value;
 };
 
+struct FlecsTargetLocation
+{
+	FVector Value;
+};
+
 struct FlecsIsmRef
 {
 	UInstancedStaticMeshComponent* Value;

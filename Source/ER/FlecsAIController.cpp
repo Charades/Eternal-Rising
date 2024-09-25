@@ -33,7 +33,11 @@ void AFlecsAIController::MoveToTargetLocation(FVector Loc)
 	if (ControlledPawn)
 	{
 		//GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Green, TEXT("Test"));
-		UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
+		Loc = Loc + FVector(
+				   FMath::RandRange(-500.0f, 500.0f),  // Random X offset
+				   FMath::RandRange(-500.0f, 500.0f),  // Random Y offset
+				   0
+				   );
 		MoveToLocation(Loc, 100.0f);
 	}
 }
