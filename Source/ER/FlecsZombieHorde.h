@@ -4,8 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
-//#include "FlecsSubsystem.h"
+#include "FlecsAIController.h"
 #include "flecs.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/FloatingPawnMovement.h"
 #include "FlecsZombieHorde.generated.h"
 
 UCLASS()
@@ -14,24 +16,20 @@ class ER_API AFlecsZombieHorde : public APawn
 	GENERATED_BODY()
 
 public:
-	AFlecsZombieHorde();
+	AFlecsZombieHorde(const class FObjectInitializer& ObjectInitializer);
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UInstancedStaticMeshComponent* InstancedMeshComponent;
 
-private:
-	TArray<int32> InstanceIndices;
-	TArray<flecs::entity> SquadEntities;
-	
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-
+	UFloatingPawnMovement* MovementComponent;
+	
 public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
 	// Called to bind functionality to input
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-	void AddEntityToSquad(flecs::entity Entity, int32 InstanceIndex);
+	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 };

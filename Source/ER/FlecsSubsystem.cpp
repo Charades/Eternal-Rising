@@ -37,7 +37,7 @@ void UFlecsSubsystem::InitFlecs(UStaticMesh* InMesh)
 	DefaultMesh = InMesh;
 	
 	 //Optimized to run every two seconds but could be optimized further by batching
-	 auto system_adjust_entity_height = GetEcsWorld()->system<FlecsZombie, FlecsISMIndex, FlecsIsmRef>("Zombie Adjust Height")
+	 auto system_snap_to_surface = GetEcsWorld()->system<FlecsZombie, FlecsISMIndex, FlecsIsmRef>("Zombie Snap To Surface")
 	 .interval(2.0)
 	 .iter([](flecs::iter it, FlecsZombie* fw, FlecsISMIndex* fi, FlecsIsmRef* fr) {
 	 	for (int i : it) {
@@ -69,7 +69,7 @@ void UFlecsSubsystem::InitFlecs(UStaticMesh* InMesh)
 	 	}
 	 });
 
-	 auto system_move_to_position = GetEcsWorld()->system<FlecsZombie, FlecsISMIndex, FlecsIsmRef>("Zombie Movement System")
+	 auto system_movement_behavior = GetEcsWorld()->system<FlecsZombie, FlecsISMIndex, FlecsIsmRef>("Zombie Movement Behavior")
 	 	.iter([](flecs::iter it, FlecsZombie* fw, FlecsISMIndex* fi, FlecsIsmRef* fr) {
 	 		for (int i : it)
 	 		{
@@ -91,8 +91,9 @@ void UFlecsSubsystem::SpawnZombieHorde(FVector SpawnLocation, float Radius, int3
 	// Spawn a new pawn for this horde
 	FActorSpawnParameters SpawnInfo;
 	SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Green, FString::Printf(TEXT("Spawning at location: %s"), *SpawnLocation.ToString()));
 	AFlecsZombieHorde* NewHorde = GetWorld()->SpawnActor<AFlecsZombieHorde>(AFlecsZombieHorde::StaticClass(), SpawnLocation, FRotator::ZeroRotator, SpawnInfo);
-
+	
 	if (!NewHorde)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Failed to spawn AFlecsZombieHorde!"));
@@ -128,7 +129,7 @@ void UFlecsSubsystem::SpawnZombieHorde(FVector SpawnLocation, float Radius, int3
 
 		SpawnZombieEntity(PointLocation, FRotator::ZeroRotator, ZombieRenderer);
 
-		DrawDebugSphere(GetWorld(), PointLocation, 20.0f, 12, FColor::Red, false, 10.0f);
+		//DrawDebugSphere(GetWorld(), PointLocation, 20.0f, 12, FColor::Red, false, 10.0f);
 	}
 }
 
@@ -142,7 +143,7 @@ void UFlecsSubsystem::SpawnZombieEntity(FVector Location, FRotator Rotation, UHi
     auto Entity = GetEcsWorld()->entity()
         .set<FlecsIsmRef>({ZombieRendererInst})
         .set<FlecsISMIndex>({IsmID})
-        .set<FlecsZombie>({FVector(0, 0, 0)})
+        .set<FlecsZombie>({100.0f})
         .child_of<Horde>()  // Parent it to the horde
         .set_name(StringCast<ANSICHAR>(*FString::Printf(TEXT("Zombie%d_%d"), IsmID, ZombieRendererInst->GetOwner()->GetUniqueID())).Get());
 }

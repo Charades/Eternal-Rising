@@ -75,3 +75,7 @@ Plugins/**/Intermediate/*
 DerivedDataCache/*
 /Saved/Config/WindowsEditor
 /Saved/Config/CrashReportClient
+
+# Custom game content
+Content/PolygonCityZombies
+Content/Meshes

@@ -19,7 +19,7 @@ struct FlecsLastTraceTime {
 
 struct FlecsZombie
 {
-	FVector Position;
+	float Health;
 };
 
 struct FlecsISMIndex

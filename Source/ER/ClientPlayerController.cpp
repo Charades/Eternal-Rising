@@ -3,6 +3,7 @@
 
 #include "ClientPlayerController.h"
 #include "EnhancedInputSubsystems.h"
+#include "FlecsZombieHorde.h"
 #include "InputMappingContext.h"
 #include "InputData.h"
 #include "SpawnActor.h"
@@ -141,6 +142,16 @@ void AClientPlayerController::SetupInputComponent()
 			{
 				UE_LOG(LogTemp, Warning, TEXT("LeftMouseClick is null."));
 			}
+
+			if (InputData->RightMouseClick)
+			{
+				EnhancedInputComponent->BindAction(InputData->RightMouseClick, ETriggerEvent::Completed, this, &AClientPlayerController::RightMouseClick);
+				UE_LOG(LogTemp, Log, TEXT("Right Mouse Click action bound."));
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("RightMouseClick is null."));
+			}
 		}
 		else
 		{
@@ -200,78 +211,122 @@ void AClientPlayerController::LeftMouseClick(const FInputActionValue& Value)
 {
 	//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("Left Mouse Click Event"));
 
-	ActorHitResults();
+	SpawnActors();
 }
 
-void AClientPlayerController::ActorHitResults()
+void AClientPlayerController::RightMouseClick(const FInputActionValue& Value)
+{
+	//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("Left Mouse Click Event"));
+
+	MoveHordeLocation();
+}
+
+void AClientPlayerController::SpawnActors()
 {
 		FVector WorldLocation, WorldDirection;
 
-		if (DeprojectMousePositionToWorld(WorldLocation, WorldDirection))
+	if (DeprojectMousePositionToWorld(WorldLocation, WorldDirection))
+	{
+		// Perform a line trace from the mouse cursor position
+		FVector Start = WorldLocation;
+		FVector End = Start + (WorldDirection * 10000.0f);
+
+		FHitResult HitResult;
+		FCollisionQueryParams CollisionParams;
+
+		bool bHit = GetWorld()->LineTraceSingleByChannel(
+			HitResult,
+			Start,
+			End,
+			ECC_Visibility,
+			CollisionParams
+		);
+
+		if (bHit)
 		{
-			// Perform a line trace from the mouse cursor position
-			FVector Start = WorldLocation;
-			FVector End = Start + (WorldDirection * 10000.0f);
-
-			FHitResult HitResult;
-			FCollisionQueryParams CollisionParams;
-
-			bool bHit = GetWorld()->LineTraceSingleByChannel(
-				HitResult,
-				Start,
-				End,
-				ECC_Visibility,
-				CollisionParams
-			);
-
-			if (bHit)
+			AActor* HitActor = HitResult.GetActor();
+			if (HitActor && HitActor->IsA<ASpawnActor>())
 			{
-				AActor* HitActor = HitResult.GetActor();
-				if (HitActor && HitActor->IsA<ASpawnActor>())
+				ASpawnActor* Spawner = Cast<ASpawnActor>(HitActor);
+
+				TArray<AActor*> FoundActors;
+				UGameplayStatics::GetAllActorsOfClass(GetWorld(), ASpawnActor::StaticClass(), FoundActors);
+
+				for (AActor* Actor : FoundActors)
 				{
-					ASpawnActor* Spawner = Cast<ASpawnActor>(HitActor);
-
-					TArray<AActor*> FoundActors;
-					UGameplayStatics::GetAllActorsOfClass(GetWorld(), ASpawnActor::StaticClass(), FoundActors);
-
-					for (AActor* Actor : FoundActors)
+					ASpawnActor* CustomActor = Cast<ASpawnActor>(Actor);
+					if (CustomActor && CustomActor->ShowSpawnMenu(false))
 					{
-						ASpawnActor* CustomActor = Cast<ASpawnActor>(Actor);
-						if (CustomActor && CustomActor->ShowSpawnMenu(false))
-						{
-							// Material was reverted successfully
-							UE_LOG(LogTemp, Warning, TEXT("Material reverted on %s"), *CustomActor->GetName());
-						}
-					}
-					
-					if (Spawner)
-					{
-						if (!Spawner->ShowSpawnMenu(true))
-						{
-							// Already using new material, so toggle back to the original
-							Spawner->ShowSpawnMenu(false);
-						}
+						// Material was reverted successfully
+						UE_LOG(LogTemp, Warning, TEXT("Material reverted on %s"), *CustomActor->GetName());
 					}
 				}
-				else
+				
+				if (Spawner)
 				{
-					// No valid custom actor was hit, toggle all actors back to their original material
-					TArray<AActor*> FoundActors;
-					UGameplayStatics::GetAllActorsOfClass(GetWorld(), ASpawnActor::StaticClass(), FoundActors);
-
-					for (AActor* Actor : FoundActors)
+					if (!Spawner->ShowSpawnMenu(true))
 					{
-						ASpawnActor* CustomActor = Cast<ASpawnActor>(Actor);
-						if (CustomActor && CustomActor->ShowSpawnMenu(false))
-						{
-							// Material was reverted successfully
-							UE_LOG(LogTemp, Warning, TEXT("Material reverted on %s"), *CustomActor->GetName());
-						}
+						// Already using new material, so toggle back to the original
+						Spawner->ShowSpawnMenu(false);
 					}
 				}
+			}
+			else
+			{
+				// No valid custom actor was hit, toggle all actors back to their original material
+				TArray<AActor*> FoundActors;
+				UGameplayStatics::GetAllActorsOfClass(GetWorld(), ASpawnActor::StaticClass(), FoundActors);
 
-				// Just a useful visual that is needed for now
-				DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 1.0f, 0, 1.0f);
+				for (AActor* Actor : FoundActors)
+				{
+					ASpawnActor* CustomActor = Cast<ASpawnActor>(Actor);
+					if (CustomActor && CustomActor->ShowSpawnMenu(false))
+					{
+						// Material was reverted successfully
+						UE_LOG(LogTemp, Warning, TEXT("Material reverted on %s"), *CustomActor->GetName());
+					}
+				}
+			}
+
+			// Just a useful visual that is needed for now
+			DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 1.0f, 0, 1.0f);
+		}
+	}
+}
+
+void AClientPlayerController::MoveHordeLocation()
+{
+	FVector WorldLocation, WorldDirection;
+
+	if (DeprojectMousePositionToWorld(WorldLocation, WorldDirection))
+	{
+		// Perform a line trace from the mouse cursor position
+		FVector Start = WorldLocation;
+		FVector End = Start + (WorldDirection * 10000.0f);
+
+		FHitResult HitResult;
+		FCollisionQueryParams CollisionParams;
+
+		bool bHit = GetWorld()->LineTraceSingleByChannel(
+			HitResult,
+			Start,
+			End,
+			ECC_Visibility,
+			CollisionParams
+		);
+
+		if (bHit)
+		{
+			TArray<AActor*> FoundActors;
+			UGameplayStatics::GetAllActorsOfClass(GetWorld(), AFlecsZombieHorde::StaticClass(), FoundActors);
+
+			for (AActor* Actor : FoundActors)
+			{
+				AFlecsZombieHorde* Horde = Cast<AFlecsZombieHorde>(Actor);
+				AFlecsAIController* AController = Cast<AFlecsAIController>(Horde->GetController());
+				AController->MoveToTargetLocation(HitResult.Location);
 			}
 		}
+		DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 1.0f, 0, 1.0f);
+	}
 }

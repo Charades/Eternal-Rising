@@ -16,7 +16,11 @@ ASpawnActor::ASpawnActor()
 	// Create and attach the Spawn Orb
 	OrbMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SphereMesh"));
 	RootComponent = OrbMesh;
-
+	OrbMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	OrbMesh->SetCollisionObjectType(ECC_WorldDynamic);  // Choose an appropriate collision object type
+	OrbMesh->SetCollisionResponseToAllChannels(ECR_Ignore);  // Ignore all collision channels by default
+	OrbMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);  // Respond to line traces (typically on Visibility channel)
+	
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> SphereMeshAsset(TEXT("/Engine/BasicShapes/Sphere.Sphere"));
 	if (SphereMeshAsset.Succeeded())
 	{
@@ -38,8 +42,8 @@ bool ASpawnActor::ShowSpawnMenu(bool bSetToggle)
 		bMenuToggled = true;
 
 		// Menu Toggled to True
-		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, FString::Printf(TEXT("%s Enable Spawn Menu"), *this->GetName()));
-		SpawnPoints(300.0f, 20);
+		//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, FString::Printf(TEXT("%s Enable Spawn Menu"), *this->GetName()));
+		SpawnPoints(600.0f, 50);
 		return true;
 	}
     
@@ -50,7 +54,7 @@ bool ASpawnActor::ShowSpawnMenu(bool bSetToggle)
 		bMenuToggled = false;
 
 		// Menu Toggled to False
-		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, FString::Printf(TEXT("%s Disable Spawn Menu"), *this->GetName()));
+		//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, FString::Printf(TEXT("%s Disable Spawn Menu"), *this->GetName()));
 		return true; 
 	}
 
@@ -64,6 +68,8 @@ void ASpawnActor::SpawnPoints(float Radius, int32 NumberOfPoints)
 
 	// Get the location of this actor
 	FVector ActorLocation = GetActorLocation();
+	//ActorLocation.X = ActorLocation.X + 600.0f;
+	ActorLocation.Z = 0;
 
 	UFlecsSubsystem* MySubsystem = GetGameInstance()->GetSubsystem<UFlecsSubsystem>();
 
