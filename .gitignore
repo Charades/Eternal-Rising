@@ -73,3 +73,10 @@ Plugins/**/Intermediate/*
 
 # Cache files for the editor to use
 DerivedDataCache/*
+/Saved/Config/WindowsEditor
+/Saved/Config/CrashReportClient
+
+# Custom game content
+Content/PolygonCityZombies
+Content/Meshes
+Content/Animations/Zombies

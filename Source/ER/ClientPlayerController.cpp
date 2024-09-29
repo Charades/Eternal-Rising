@@ -3,6 +3,7 @@
 
 #include "ClientPlayerController.h"
 #include "EnhancedInputSubsystems.h"
+#include "FlecsZombieHorde.h"
 #include "InputMappingContext.h"
 #include "InputData.h"
 #include "SpawnActor.h"
@@ -16,7 +17,7 @@ AClientPlayerController::AClientPlayerController()
 {
 	// Find the InputMappingContext asset in the content browser
 	static ConstructorHelpers::FObjectFinder<UInputMappingContext> MappingContextFinder(
-		TEXT("/Game/GameContent/Blueprints/IMC_Default"));
+		TEXT("/Game/Input/IMC_Default"));
 	if (MappingContextFinder.Succeeded())
 	{
 		DefaultMappingContext = MappingContextFinder.Object;
@@ -25,7 +26,7 @@ AClientPlayerController::AClientPlayerController()
 
 	// Find the InputActionDataAsset in the content browser
 	static ConstructorHelpers::FObjectFinder<UInputData> InputDataAssetFinder(
-		TEXT("/Game/GameContent/Blueprints/DA_InputActions"));
+		TEXT("/Game/Data/DA_InputActions"));
 	if (InputDataAssetFinder.Succeeded())
 	{
 		InputData = InputDataAssetFinder.Object;
@@ -33,7 +34,7 @@ AClientPlayerController::AClientPlayerController()
 	}
 
 	static ConstructorHelpers::FClassFinder<UUserWidget> EscapeMenuWidgetFinder(
-		TEXT("/Game/GameContent/Blueprints/EscapeMenu"));
+		TEXT("/Game/Blueprints/UI/EscapeMenu"));
 	if (EscapeMenuWidgetFinder.Succeeded())
 	{
 		EscapeMenuWidget = EscapeMenuWidgetFinder.Class;
@@ -141,6 +142,16 @@ void AClientPlayerController::SetupInputComponent()
 			{
 				UE_LOG(LogTemp, Warning, TEXT("LeftMouseClick is null."));
 			}
+
+			if (InputData->RightMouseClick)
+			{
+				EnhancedInputComponent->BindAction(InputData->RightMouseClick, ETriggerEvent::Completed, this, &AClientPlayerController::RightMouseClick);
+				UE_LOG(LogTemp, Log, TEXT("Right Mouse Click action bound."));
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("RightMouseClick is null."));
+			}
 		}
 		else
 		{
@@ -178,14 +189,14 @@ void AClientPlayerController::OnShowEscapeMenu(const FInputActionValue& Value)
 			{
 				EscapeMenu->RemoveFromParent();
 				EscapeMenu = nullptr;
-				SetShowMouseCursor(false);
+				//SetShowMouseCursor(false);
 				SetInputMode(FInputModeGameOnly());
 			}
 			else
 			{
 				EscapeMenu->AddToViewport();
 				UE_LOG(LogTemp, Log, TEXT("Escape Menu Widget displayed."));
-				SetShowMouseCursor(true);
+				//SetShowMouseCursor(true);
 				SetInputMode(FInputModeGameAndUI());
 			}
 		}
@@ -200,44 +211,122 @@ void AClientPlayerController::LeftMouseClick(const FInputActionValue& Value)
 {
 	//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("Left Mouse Click Event"));
 
-	FindActorAndExecute();
+	SpawnActors();
 }
 
-void AClientPlayerController::FindActorAndExecute()
+void AClientPlayerController::RightMouseClick(const FInputActionValue& Value)
+{
+	//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("Left Mouse Click Event"));
+
+	MoveHordeLocation();
+}
+
+void AClientPlayerController::SpawnActors()
 {
 		FVector WorldLocation, WorldDirection;
 
-		if (DeprojectMousePositionToWorld(WorldLocation, WorldDirection))
+	if (DeprojectMousePositionToWorld(WorldLocation, WorldDirection))
+	{
+		// Perform a line trace from the mouse cursor position
+		FVector Start = WorldLocation;
+		FVector End = Start + (WorldDirection * 10000.0f);
+
+		FHitResult HitResult;
+		FCollisionQueryParams CollisionParams;
+
+		bool bHit = GetWorld()->LineTraceSingleByChannel(
+			HitResult,
+			Start,
+			End,
+			ECC_Visibility,
+			CollisionParams
+		);
+
+		if (bHit)
 		{
-			// Perform a line trace from the mouse cursor position
-			FVector Start = WorldLocation;
-			FVector End = Start + (WorldDirection * 10000.0f);
-
-			FHitResult HitResult;
-			FCollisionQueryParams CollisionParams;
-
-			bool bHit = GetWorld()->LineTraceSingleByChannel(
-				HitResult,
-				Start,
-				End,
-				ECC_Visibility,
-				CollisionParams
-			);
-
-			if (bHit)
+			AActor* HitActor = HitResult.GetActor();
+			if (HitActor && HitActor->IsA<ASpawnActor>())
 			{
-				AActor* HitActor = HitResult.GetActor();
-				if (HitActor && HitActor->IsA<ASpawnActor>())
+				ASpawnActor* Spawner = Cast<ASpawnActor>(HitActor);
+
+				TArray<AActor*> FoundActors;
+				UGameplayStatics::GetAllActorsOfClass(GetWorld(), ASpawnActor::StaticClass(), FoundActors);
+
+				for (AActor* Actor : FoundActors)
 				{
-					ASpawnActor* Spawner = Cast<ASpawnActor>(HitActor);
-					if (Spawner)
+					ASpawnActor* CustomActor = Cast<ASpawnActor>(Actor);
+					if (CustomActor && CustomActor->ShowSpawnMenu(false))
 					{
-						Spawner->ShowSpawnMenu();
+						// Material was reverted successfully
+						UE_LOG(LogTemp, Warning, TEXT("Material reverted on %s"), *CustomActor->GetName());
 					}
 				}
+				
+				if (Spawner)
+				{
+					if (!Spawner->ShowSpawnMenu(true))
+					{
+						// Already using new material, so toggle back to the original
+						Spawner->ShowSpawnMenu(false);
+					}
+				}
+			}
+			else
+			{
+				// No valid custom actor was hit, toggle all actors back to their original material
+				TArray<AActor*> FoundActors;
+				UGameplayStatics::GetAllActorsOfClass(GetWorld(), ASpawnActor::StaticClass(), FoundActors);
 
-				// Just a useful visual that is needed for now
-				DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 1.0f, 0, 1.0f);
+				for (AActor* Actor : FoundActors)
+				{
+					ASpawnActor* CustomActor = Cast<ASpawnActor>(Actor);
+					if (CustomActor && CustomActor->ShowSpawnMenu(false))
+					{
+						// Material was reverted successfully
+						UE_LOG(LogTemp, Warning, TEXT("Material reverted on %s"), *CustomActor->GetName());
+					}
+				}
+			}
+
+			// Just a useful visual that is needed for now
+			DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 1.0f, 0, 1.0f);
+		}
+	}
+}
+
+void AClientPlayerController::MoveHordeLocation()
+{
+	FVector WorldLocation, WorldDirection;
+
+	if (DeprojectMousePositionToWorld(WorldLocation, WorldDirection))
+	{
+		// Perform a line trace from the mouse cursor position
+		FVector Start = WorldLocation;
+		FVector End = Start + (WorldDirection * 10000.0f);
+
+		FHitResult HitResult;
+		FCollisionQueryParams CollisionParams;
+
+		bool bHit = GetWorld()->LineTraceSingleByChannel(
+			HitResult,
+			Start,
+			End,
+			ECC_Visibility,
+			CollisionParams
+		);
+
+		if (bHit)
+		{
+			TArray<AActor*> FoundActors;
+			UGameplayStatics::GetAllActorsOfClass(GetWorld(), AFlecsZombieHorde::StaticClass(), FoundActors);
+
+			for (AActor* Actor : FoundActors)
+			{
+				AFlecsZombieHorde* Horde = Cast<AFlecsZombieHorde>(Actor);
+				AFlecsAIController* AController = Cast<AFlecsAIController>(Horde->GetController());
+				AController->MoveToTargetLocation(HitResult.Location);
 			}
 		}
+		DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 1.0f, 0, 1.0f);
+	}
 }

@@ -37,7 +37,9 @@ protected:
 	UFUNCTION()
 	void OnShowEscapeMenu(const FInputActionValue& Value);
 	void LeftMouseClick(const FInputActionValue& Value);
-	void FindActorAndExecute();
+	void RightMouseClick(const FInputActionValue& Value);
+	void SpawnActors();
+	void MoveHordeLocation();
 
 private:
 	HSteamNetConnection ServerConnection;
