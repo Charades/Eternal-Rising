@@ -9,12 +9,18 @@ UMainMenu::UMainMenu(const FObjectInitializer& ObjectInitializer): Super(ObjectI
                                                                    ExitGameButton(nullptr),
                                                                    ServerBrowser(nullptr)
 {
-	static ConstructorHelpers::FClassFinder<UServerBrowser> ServerBrowserWidgetFinder(
-		TEXT("/Game/Blueprints/UI/ServerBrowser"));
+	static ConstructorHelpers::FClassFinder<UServerBrowser> ServerBrowserWidgetFinder(TEXT("/Game/Blueprints/UI/ServerBrowser"));
 	if (ServerBrowserWidgetFinder.Succeeded())
 	{
 		ServerBrowserWidget = ServerBrowserWidgetFinder.Class;
 		UE_LOG(LogTemp, Log, TEXT("Found Server Browser Widget!"));
+	}
+
+	static ConstructorHelpers::FClassFinder<UUserWidget> SettingsMenuWidgetFinder(TEXT("/Game/Blueprints/UI/SettingsMenu"));
+	if (SettingsMenuWidgetFinder.Succeeded())
+	{
+		SettingsMenuWidget = SettingsMenuWidgetFinder.Class;
+		UE_LOG(LogTemp, Log, TEXT("Found Settings Menu Widget!"));
 	}
 }
 
@@ -28,6 +34,11 @@ void UMainMenu::NativeConstruct()
 	if (ServerBrowserButton)
 	{
 		ServerBrowserButton->OnClicked.AddDynamic(this, &UMainMenu::OnServerBrowserButtonClicked);
+	}
+
+	if (SettingsMenuButton)
+	{
+		SettingsMenuButton->OnClicked.AddDynamic(this, &UMainMenu::OnSettingsMenuButtonClicked);
 	}
 	
 	if (ExitGameButton)
@@ -80,6 +91,31 @@ void UMainMenu::OnServerBrowserButtonClicked()
 	else
 	{
 		UE_LOG(LogTemp, Warning, TEXT("ServerBrowserWidget is null."));
+	}
+}
+
+void UMainMenu::OnSettingsMenuButtonClicked()
+{
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("Settings Menu clicked!"));
+	}
+
+	if (SettingsMenuWidget)
+	{
+		if (!SettingsMenu)
+		{
+			SettingsMenu = CreateWidget<UUserWidget>(this, SettingsMenuWidget);
+		}
+
+		if (SettingsMenu)
+		{
+			SettingsMenu->AddToViewport();
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SettingsMenuWidget is null."));
 	}
 }
 

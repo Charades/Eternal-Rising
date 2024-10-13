@@ -26,7 +26,7 @@ AClientPlayerController::AClientPlayerController()
 
 	// Find the InputActionDataAsset in the content browser
 	static ConstructorHelpers::FObjectFinder<UInputData> InputDataAssetFinder(
-		TEXT("/Game/Data/DA_InputActions"));
+		TEXT("/Game/Input/Data/DA_InputActions"));
 	if (InputDataAssetFinder.Succeeded())
 	{
 		InputData = InputDataAssetFinder.Object;
@@ -289,7 +289,7 @@ void AClientPlayerController::SpawnActors()
 			}
 
 			// Just a useful visual that is needed for now
-			DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 1.0f, 0, 1.0f);
+			//DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 1.0f, 0, 1.0f);
 		}
 	}
 }

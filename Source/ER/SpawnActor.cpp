@@ -43,7 +43,7 @@ bool ASpawnActor::ShowSpawnMenu(bool bSetToggle)
 
 		// Menu Toggled to True
 		//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, FString::Printf(TEXT("%s Enable Spawn Menu"), *this->GetName()));
-		SpawnPoints(600.0f, 50);
+		SpawnPoints(1200.0f, 100);
 		return true;
 	}
     

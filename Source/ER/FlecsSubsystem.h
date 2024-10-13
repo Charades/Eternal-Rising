@@ -22,6 +22,8 @@ struct FlecsZombie
 	float Health;
 };
 
+struct Horde {};
+
 struct FlecsISMIndex
 {
 	int Value;
@@ -37,7 +39,10 @@ struct FlecsIsmRef
 	UInstancedStaticMeshComponent* Value;
 };
 
-struct Horde {};
+struct FlecsHordeRef
+{
+	AFlecsZombieHorde* Value;
+};
 
 USTRUCT(BlueprintType)
 struct FFlecsEntityHandle
@@ -70,15 +75,28 @@ public:
 	void InitFlecs(UStaticMesh* InMesh);
 
 	UFUNCTION(BlueprintCallable, Category="FLECS")
-	void SpawnZombieEntity(FVector Location, FRotator Rotation, UHierarchicalInstancedStaticMeshComponent* ZombieRendererInst);
+	void SpawnZombieEntity(FVector Location, FRotator Rotation, UInstancedStaticMeshComponent* ZombieRendererInst);
 	void SpawnZombieHorde(FVector SpawnLocation, float Radius, int32 NumEntities);
 	
 	TWeakObjectPtr<UStaticMesh> DefaultMesh;
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "AI")
+	void OnHordeSpawned(AFlecsZombieHorde* Horde);
+	
+	UFUNCTION(BlueprintPure, Category = "AI")
+	TArray<AFlecsZombieHorde*>& Hordes() { return AgentInstances; }
 
 protected:
 	FTickerDelegate OnTickDelegate;
 	FTSTicker::FDelegateHandle OnTickHandle;
 	flecs::world* ECSWorld = nullptr;
+	int32 CurrentAgentIndex = -1;
+
+	UPROPERTY(Transient)
+	TArray<AFlecsZombieHorde*> AgentInstances;
+
+	UPROPERTY(Category = Spawn, EditDefaultsOnly)
+	TSubclassOf<AFlecsZombieHorde> HordeBP;
 
 private:
 	bool Tick(float DeltaTime);

@@ -9,7 +9,7 @@ AFlecsZombieHorde::AFlecsZombieHorde(const class FObjectInitializer& ObjectIniti
 	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent"));
-    MovementComponent = CreateDefaultSubobject<UFloatingPawnMovement>(TEXT("MovementComponent"));
+	MovementComponent = CreateDefaultSubobject<UFloatingPawnMovement>(TEXT("MovementComponent"));
 	AIControllerClass = AFlecsAIController::StaticClass();
 	MovementComponent->MaxSpeed = 380.0f;
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
