@@ -26,36 +26,79 @@ public:
 protected:
 	// Steering Calculations
 	void ComputeMovementVector(AFlecsZombieHorde* HordeAgent);
+	void ComputeAlignmentVector();
+	void ComputeCohesionVector();
+	void ComputeSeparationVector();
+	void ComputeCollisionAvoidanceVector(AFlecsZombieHorde* HordeAgent);
+	void ComputeAllStimuliVectors(AFlecsZombieHorde* HordeAgent);
+	void PerformGroundTrace(AFlecsZombieHorde* HordeAgent, float TraceDistance, ECollisionChannel CollisionChannel = ECC_WorldStatic, float HeightOffset = 35.0f);
 
 	// Component Properties
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI|Steering Behavior Component")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flocking Component")
 	FVector TargetMoveVector;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Steering Behavior Component")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Flocking Component")
 	FVector CurrentMoveVector;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI|Steering Behavior Component")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flocking Component")
 	FVector AlignmentVector;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI|Steering Behavior Component")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flocking Component")
 	FVector CohesionVector;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI|Steering Behavior Component")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flocking Component")
 	FVector SeparationVector;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI|Steering Behavior Component")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flocking Component")
 	FVector NegativeStimuliVector;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI|Steering Behavior Component")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flocking Component")
 	FVector PositiveStimuliVector;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI|Steering Behavior Component")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flocking Component")
 	FVector CollisionAvoidanceVector;
+	
+	TSet<AFlecsZombieStimulus*> StimulusSet;
 
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI|Steering Behavior Component")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flocking Component")
+	TArray<UFlecsZombieBoid*> NeighboringBoids;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flocking Component")
 	int32 MeshIndex;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI|Steering Behavior Component")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Flocking Component")
 	FTransform BoidTransform;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flocking Component")
+	float BaseMovementSpeed;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flocking Component")
+	float MaxMovementSpeed;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flocking Component")
+	float MaxRotationSpeed;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flocking Component")
+	bool bAlignWithFloor = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flocking Component")
+	float FloorHeightOffset = 24.0f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flocking Component", meta = (Tooltip = "Max distance to the floor at ground level", EditCondition = "bAlignWithFloor"))
+	float MaxFloorDistance = 1000.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flocking Component")
+	float CollisionAvoidanceWeight;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flocking Component")
+	float AlignmentWeight;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flocking Component")
+	float CohesionWeight;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flocking Component")
+	float CohesionLerp;
+	
+	const float NormalizeVectorTolerance = 0.0001f;
 };
