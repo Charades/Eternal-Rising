@@ -24,7 +24,6 @@ public:
 	void Update(float DeltaSeconds, AFlecsZombieHorde* Agent);
 
 protected:
-	// Steering Calculations
 	void ComputeMovementVector(AFlecsZombieHorde* HordeAgent);
 	void ComputeAlignmentVector();
 	void ComputeCohesionVector();
@@ -32,8 +31,7 @@ protected:
 	void ComputeCollisionAvoidanceVector(AFlecsZombieHorde* HordeAgent);
 	void ComputeAllStimuliVectors(AFlecsZombieHorde* HordeAgent);
 	void PerformGroundTrace(AFlecsZombieHorde* HordeAgent, float TraceDistance, ECollisionChannel CollisionChannel = ECC_WorldStatic, float HeightOffset = 35.0f);
-
-	// Component Properties
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flocking Component")
 	FVector TargetMoveVector;
 
@@ -99,6 +97,27 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flocking Component")
 	float CohesionLerp;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flocking Component")
+	float SeparationWeight;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flocking Component")
+	float SeparationForce;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flocking Component")
+	float SeparationLerp;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flocking Component")
+	float CollisionWeight;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flocking Component")
+	float CollisionDistance;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flocking Component")
+	double CollisionDeviationAngle = PI * 10.0;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flocking Component")
+	float PhysicalRadius;
 	
 	const float NormalizeVectorTolerance = 0.0001f;
 };

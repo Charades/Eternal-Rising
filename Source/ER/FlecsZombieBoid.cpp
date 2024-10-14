@@ -73,10 +73,10 @@ void UFlecsZombieBoid::ComputeAlignmentVector()
 {
 	for (const UFlecsZombieBoid* Boid : NeighboringBoids)
 	{
-		AlignmentVector += Boid->CurrentMoveVector.GetSafeNormal(NormalizeVectorTolerance );
+		AlignmentVector += Boid->CurrentMoveVector.GetSafeNormal(NormalizeVectorTolerance);
 	}
 
-	AlignmentVector = (CurrentMoveVector + AlignmentVector).GetSafeNormal(NormalizeVectorTolerance ) * AlignmentWeight;
+	AlignmentVector = (CurrentMoveVector + AlignmentVector).GetSafeNormal(NormalizeVectorTolerance) * AlignmentWeight;
 }
 
 void UFlecsZombieBoid::ComputeCohesionVector()
@@ -92,17 +92,40 @@ void UFlecsZombieBoid::ComputeCohesionVector()
 
 void UFlecsZombieBoid::ComputeSeparationVector()
 {
+	const FVector& Location = BoidTransform.GetLocation();
+
+	for (const UFlecsZombieBoid* Boid : NeighboringBoids)
+	{
+		FVector Separation = Location - Boid->BoidTransform.GetLocation();
+		SeparationVector += Separation.GetSafeNormal(NormalizeVectorTolerance) / FMath::Abs(Separation.Size() - PhysicalRadius);
+	}
+
+	const FVector SeparationForceComponent = SeparationVector * SeparationForce;
+	SeparationVector += (SeparationForceComponent + SeparationForceComponent * (SeparationLerp / NeighboringBoids.Num())) * SeparationWeight;
 }
 
-void UFlecsZombieBoid::ComputeCollisionAvoidanceVector(AFlecsZombieHorde* HordeAgent)
+void UFlecsZombieBoid::ComputeCollisionAvoidanceVector(AFlecsZombieHorde* Horde)
+{
+	FHitResult OutHit;
+	const FVector& Location = BoidTransform.GetLocation();
+	static const FName LineTrace(TEXT("LineTrace"));
+	const FVector End = Location + BoidTransform.GetRotation().GetForwardVector() * CollisionDistance;
+	FCollisionQueryParams Params(LineTrace, false);
+
+	const static FCollisionShape SphereShape = FCollisionShape::MakeSphere(PhysicalRadius);
+	
+	if (GetWorld()->SweepSingleByChannel(OutHit, Location, End, FQuat::Identity, ECC_WorldStatic, SphereShape, Params))
+	{
+		const FVector Direction = OutHit.ImpactPoint - BoidTransform.GetLocation();
+		CollisionAvoidanceVector -= (Direction.GetSafeNormal(NormalizeVectorTolerance) / FMath::Abs(Direction.Size() - PhysicalRadius)).RotateAngleAxis(CollisionDeviationAngle, FVector::UpVector) * CollisionWeight;
+	}
+}
+
+void UFlecsZombieBoid::ComputeAllStimuliVectors(AFlecsZombieHorde* Horde)
 {
 }
 
-void UFlecsZombieBoid::ComputeAllStimuliVectors(AFlecsZombieHorde* HordeAgent)
-{
-}
-
-void UFlecsZombieBoid::PerformGroundTrace(AFlecsZombieHorde* HordeAgent, float TraceDistance,
+void UFlecsZombieBoid::PerformGroundTrace(AFlecsZombieHorde* Horde, float TraceDistance,
                                           ECollisionChannel CollisionChannel, float HeightOffset)
 {
 }
