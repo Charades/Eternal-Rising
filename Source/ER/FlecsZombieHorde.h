@@ -6,6 +6,7 @@
 #include "GameFramework/Pawn.h"
 #include "FlecsAIController.h"
 #include "flecs.h"
+#include "FlecsZombieBoid.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/FloatingPawnMovement.h"
 #include "FlecsZombieHorde.generated.h"
@@ -24,7 +25,15 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+	void SpawnBoid(const FVector& Location, const FRotator& Rotation);
 	UFloatingPawnMovement* MovementComponent;
+
+	// All the agents are now boids inside this Agents Manager
+	UPROPERTY(Category = AI, EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	TMap<int32, UFlecsZombieBoid*> Boids;
+
+	//protect the use of the boids
+	FCriticalSection MutexBoid;
 	
 public:
 	// Called every frame

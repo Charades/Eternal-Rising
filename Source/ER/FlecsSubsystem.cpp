@@ -1,4 +1,6 @@
 ﻿#include "FlecsSubsystem.h"
+
+#include "FlecsZombieBoid.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
 
@@ -193,7 +195,7 @@ void UFlecsSubsystem::SpawnZombieEntity(FVector Location, FRotator Rotation, UIn
     // Add the instance of the zombie's mesh to the ISM component
 	auto IsmID = ZombieRendererInst->AddInstance(FTransform(Rotation, Location));
 	AFlecsZombieHorde* HordeRef = Cast<AFlecsZombieHorde>(ZombieRendererInst->GetOwner());
-
+	
     // // Create the entity in Flecs
     auto Entity = GetEcsWorld()->entity()
 		.set<FlecsHordeRef>({HordeRef})

@@ -3,6 +3,7 @@
 
 #include "FlecsZombieHorde.h"
 
+#include "FlecsZombieBoid.h"
 #include "Components/InstancedStaticMeshComponent.h"
 
 // Sets default values
@@ -33,6 +34,18 @@ void AFlecsZombieHorde::BeginPlay()
 	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("Instanced Mesh Component not found."));
+	}
+}
+
+void AFlecsZombieHorde::SpawnBoid(const FVector& Location, const FRotator& Rotation)
+{
+	//Create new instanced mesh in location and rotation
+	const int32 MeshInstanceIndex = InstancedMeshComponent->AddInstance(FTransform(Rotation.Quaternion(), Location, FVector::OneVector));
+	UFlecsZombieBoid* Boid = NewObject<UFlecsZombieBoid>(this);
+	Boid->Init(Location, Rotation, MeshInstanceIndex);
+	{
+		FScopeLock ScopeLock(&MutexBoid);
+		Boids.Add(MeshInstanceIndex, Boid);
 	}
 }
 
