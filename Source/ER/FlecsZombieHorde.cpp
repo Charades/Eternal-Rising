@@ -3,12 +3,16 @@
 
 #include "FlecsZombieHorde.h"
 
+#include "Components/InstancedStaticMeshComponent.h"
+
 // Sets default values
 AFlecsZombieHorde::AFlecsZombieHorde(const class FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent"));
+	InstancedMeshComponent = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("InstancedMeshComponent"));
+	RootComponent = InstancedMeshComponent;
+	InstancedMeshComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	MovementComponent = CreateDefaultSubobject<UFloatingPawnMovement>(TEXT("MovementComponent"));
 	AIControllerClass = AFlecsAIController::StaticClass();
 	MovementComponent->MaxSpeed = 380.0f;
@@ -20,6 +24,16 @@ AFlecsZombieHorde::AFlecsZombieHorde(const class FObjectInitializer& ObjectIniti
 void AFlecsZombieHorde::BeginPlay()
 {
 	Super::BeginPlay();
+
+	UInstancedStaticMeshComponent* ZombieRenderer = FindComponentByClass<UInstancedStaticMeshComponent>();
+	if (ZombieRenderer)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Instanced Mesh Component found."));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Instanced Mesh Component not found."));
+	}
 }
 
 void AFlecsZombieHorde::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)

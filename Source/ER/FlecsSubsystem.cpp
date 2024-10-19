@@ -36,101 +36,99 @@ void UFlecsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 void UFlecsSubsystem::InitFlecs(UStaticMesh* InMesh)
 {
 	DefaultMesh = InMesh;
-
 	
-	
-	 //Optimized to run every two seconds but could be optimized further by batching
-	  // auto system_snap_to_surface = GetEcsWorld()->system<FlecsZombie, FlecsISMIndex, FlecsIsmRef, FlecsTargetLocation>("Zombie Snap To Surface")
-	  // .interval(2.0)
-	  // .iter([](flecs::iter it, FlecsZombie* fw, FlecsISMIndex* fi, FlecsIsmRef* fr, FlecsTargetLocation* ftl) {
-	  // 	for (int i : it) {
-	  // 		auto index = fi[i].Value;
-	  // 		FTransform InstanceTransform;
-	  // 		
-	  // 		fr[i].Value->GetInstanceTransform(index, InstanceTransform, true);
-	  //
-	  // 		FVector InstanceLocation = InstanceTransform.GetLocation();
-	  // 		FHitResult HitResult;
-	  //
-	  // 		// Trace downwards
-	  // 		FVector Start = InstanceLocation;
-	  // 		FVector End = Start - FVector(0.f, 0.f, 1000.f); 
-	  //
-	  // 		// Ignore the owning actor
-	  // 		FCollisionQueryParams QueryParams;
-	  // 		QueryParams.AddIgnoredActor(fr[i].Value->GetOwner());
-	  // 	
-	  // 		if (fr[i].Value->GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_Visibility, QueryParams))
-	  // 		{
-	  // 			// Adjust the instance position to the hit point
-	  // 			InstanceLocation.Z = HitResult.Location.Z;
-	  // 			ftl[i].Value.Z = HitResult.Location.Z;
-	  // 			InstanceTransform.SetLocation(InstanceLocation);
-	  //
-	  // 			// Update the instance's transform
-	  // 			bool bMarkRenderState = (i == it.count() - 1);
-	  // 			fr[i].Value->UpdateInstanceTransform(index, InstanceTransform, true, bMarkRenderState, true);
-	  // 		}
-	  // 	}
-	  // });
+	//Optimized to run every two seconds but could be optimized further by batching
+	   auto system_snap_to_surface = GetEcsWorld()->system<FlecsZombie, FlecsISMIndex, FlecsIsmRef, FlecsTargetLocation>("Zombie Snap To Surface")
+	   .interval(2.0)
+	   .iter([](flecs::iter it, FlecsZombie* fw, FlecsISMIndex* fi, FlecsIsmRef* fr, FlecsTargetLocation* ftl) {
+	   	for (int i : it) {
+	   		auto index = fi[i].Value;
+	   		FTransform InstanceTransform;
+	   		
+	   		fr[i].Value->GetInstanceTransform(index, InstanceTransform, true);
+	  
+	   		FVector InstanceLocation = InstanceTransform.GetLocation();
+	   		FHitResult HitResult;
+	  
+	   		// Trace downwards
+	   		FVector Start = InstanceLocation;
+	   		FVector End = Start - FVector(0.f, 0.f, 1000.f); 
+	  
+	   		// Ignore the owning actor
+	   		FCollisionQueryParams QueryParams;
+	   		QueryParams.AddIgnoredActor(fr[i].Value->GetOwner());
+	   	
+	   		if (fr[i].Value->GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_Visibility, QueryParams))
+	   		{
+	   			// Adjust the instance position to the hit point
+	   			InstanceLocation.Z = HitResult.Location.Z;
+	   			ftl[i].Value.Z = HitResult.Location.Z;
+	   			InstanceTransform.SetLocation(InstanceLocation);
+	  
+	   			// Update the instance's transform
+	   			bool bMarkRenderState = (i == it.count() - 1);
+	   			fr[i].Value->UpdateInstanceTransform(index, InstanceTransform, true, bMarkRenderState, true);
+	   		}
+	   	}
+	   });
 
-	// This is just an example that will be replaced by the boids movement system
-	// auto system_movement_behavior = GetEcsWorld()->system<FlecsISMIndex, FlecsIsmRef, FlecsTargetLocation, FlecsHordeRef>("Zombie Movement Behavior")
-	// .iter([](flecs::iter& it, FlecsISMIndex* fi, FlecsIsmRef* fr, FlecsTargetLocation* ftl, FlecsHordeRef* h) {
-	//     const float DistanceThreshold = 100.0f;
-	//     const float LerpAlpha = 0.005f;
-	//     const float RotationLerpAlpha = 0.03f;
-	//     const FVector2D OffsetRange(-1000.0f, 1000.0f);
-	//
-	//     for (int i = 0; i < it.count(); ++i) {
-	//         const int32 index = fi[i].Value;
-	//     	const bool bMarkRenderState = (i == it.count() - 1);
-	//         FTransform InstanceTransform;
-	//         fr[i].Value->GetInstanceTransform(index, InstanceTransform, true);
-	//     	
-	//         FVector PawnLocation = h[i].Value->GetActorLocation();
-	//         FVector& TargetOffset = ftl[i].Value;
-	//
-	//         if (TargetOffset.IsZero()) {
-	//             TargetOffset = FVector(
-	//                 FMath::RandRange(OffsetRange.X, OffsetRange.Y),
-	//                 FMath::RandRange(OffsetRange.X, OffsetRange.Y),
-	//                 0.0f
-	//             );
-	//             InstanceTransform.SetLocation(PawnLocation + TargetOffset);
-	//             fr[i].Value->UpdateInstanceTransform(index, InstanceTransform, true, bMarkRenderState, true);
-	//             continue;
-	//         }
-	//
-	//         const FVector InstanceLocation = InstanceTransform.GetLocation();
-	//         if (FVector::DistSquared(InstanceLocation, PawnLocation + TargetOffset) < DistanceThreshold) {
-	//             TargetOffset = FVector(
-	//                 FMath::RandRange(OffsetRange.X, OffsetRange.Y),
-	//                 FMath::RandRange(OffsetRange.X, OffsetRange.Y),
-	//                 0.0f
-	//             );
-	//         }
-	//
-	//         const FVector PawnVelocity = h[i].Value->GetVelocity();
-	//         if (!PawnVelocity.IsNearlyZero()) {
-	//             const FVector PawnMovementDirection = PawnVelocity.GetSafeNormal();
-	//             const FRotator LookAtRotation = UKismetMathLibrary::MakeRotFromX(PawnMovementDirection);
-	//             const FQuat NewRotation = FQuat::Slerp(
-	//                 InstanceTransform.GetRotation(),
-	//                 FRotator(0.0f, LookAtRotation.Yaw - 90.0f, 0.0f).Quaternion(),
-	//                 RotationLerpAlpha
-	//             );
-	//             InstanceTransform.SetRotation(NewRotation);
-	//         }
-	//
-	//         FVector TargetLocation = PawnLocation + TargetOffset;
-	//         TargetLocation.Z = InstanceLocation.Z;
-	//         const FVector NewLocation = FMath::Lerp(InstanceLocation, TargetLocation, LerpAlpha);
-	//         InstanceTransform.SetLocation(NewLocation);
-	//     	
-	//         fr[i].Value->UpdateInstanceTransform(index, InstanceTransform, true, bMarkRenderState, true);
-	//     }
-	// });
+	//This is just an example that will be replaced by the boids movement system
+	auto system_movement_behavior = GetEcsWorld()->system<FlecsISMIndex, FlecsIsmRef, FlecsTargetLocation, FlecsHordeRef>("Zombie Movement Behavior")
+	.iter([](flecs::iter& it, FlecsISMIndex* fi, FlecsIsmRef* fr, FlecsTargetLocation* ftl, FlecsHordeRef* h) {
+	    const float DistanceThreshold = 100.0f;
+	    const float LerpAlpha = 0.005f;
+	    const float RotationLerpAlpha = 0.03f;
+	    const FVector2D OffsetRange(-1000.0f, 1000.0f);
+	
+	    for (int i = 0; i < it.count(); ++i) {
+	        const int32 index = fi[i].Value;
+	    	const bool bMarkRenderState = (i == it.count() - 1);
+	        FTransform InstanceTransform;
+	        fr[i].Value->GetInstanceTransform(index, InstanceTransform, true);
+	    	
+	        FVector PawnLocation = h[i].Value->GetActorLocation();
+	        FVector& TargetOffset = ftl[i].Value;
+	
+	        if (TargetOffset.IsZero()) {
+	            TargetOffset = FVector(
+	                FMath::RandRange(OffsetRange.X, OffsetRange.Y),
+	                FMath::RandRange(OffsetRange.X, OffsetRange.Y),
+	                0.0f
+	            );
+	            InstanceTransform.SetLocation(PawnLocation + TargetOffset);
+	            fr[i].Value->UpdateInstanceTransform(index, InstanceTransform, true, bMarkRenderState, true);
+	            continue;
+	        }
+	
+	        const FVector InstanceLocation = InstanceTransform.GetLocation();
+	        if (FVector::DistSquared(InstanceLocation, PawnLocation + TargetOffset) < DistanceThreshold) {
+	            TargetOffset = FVector(
+	                FMath::RandRange(OffsetRange.X, OffsetRange.Y),
+	                FMath::RandRange(OffsetRange.X, OffsetRange.Y),
+	                0.0f
+	            );
+	        }
+	
+	        const FVector PawnVelocity = h[i].Value->GetVelocity();
+	        if (!PawnVelocity.IsNearlyZero()) {
+	            const FVector PawnMovementDirection = PawnVelocity.GetSafeNormal();
+	            const FRotator LookAtRotation = UKismetMathLibrary::MakeRotFromX(PawnMovementDirection);
+	            const FQuat NewRotation = FQuat::Slerp(
+	                InstanceTransform.GetRotation(),
+	                FRotator(0.0f, LookAtRotation.Yaw - 90.0f, 0.0f).Quaternion(),
+	                RotationLerpAlpha
+	            );
+	            InstanceTransform.SetRotation(NewRotation);
+	        }
+	
+	        FVector TargetLocation = PawnLocation + TargetOffset;
+	        TargetLocation.Z = InstanceLocation.Z;
+	        const FVector NewLocation = FMath::Lerp(InstanceLocation, TargetLocation, LerpAlpha);
+	        InstanceTransform.SetLocation(NewLocation);
+	    	
+	        fr[i].Value->UpdateInstanceTransform(index, InstanceTransform, true, bMarkRenderState, true);
+	    }
+	});
 	
 	UE_LOG(LogTemp, Warning, TEXT("Flecs Horde System Initialized!"));
 }
@@ -138,6 +136,8 @@ void UFlecsSubsystem::InitFlecs(UStaticMesh* InMesh)
 // This function spawns a pawn and assigns it an instanced static mesh component.
 void UFlecsSubsystem::SpawnZombieHorde(FVector SpawnLocation, float Radius, int32 NumEntities)
 {
+	UE_LOG(LogTemp, Error, TEXT("Accessed SpawnZombieHorde"));
+	
 	if (!DefaultMesh.IsValid())
 	{
 		UE_LOG(LogTemp, Error, TEXT("DefaultMesh is not valid! Make sure it's set correctly."));
@@ -148,7 +148,7 @@ void UFlecsSubsystem::SpawnZombieHorde(FVector SpawnLocation, float Radius, int3
 	FActorSpawnParameters SpawnInfo;
 	SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Green, FString::Printf(TEXT("Spawning at location: %s"), *SpawnLocation.ToString()));
-	AFlecsZombieHorde* NewHorde = GetWorld()->SpawnActor<AFlecsZombieHorde>(HordeBP, SpawnLocation, FRotator::ZeroRotator, SpawnInfo);
+	AFlecsZombieHorde* NewHorde = GetWorld()->SpawnActor<AFlecsZombieHorde>(AFlecsZombieHorde::StaticClass(), SpawnLocation, FRotator::ZeroRotator, SpawnInfo);
 	CurrentAgentIndex = AgentInstances.AddUnique(NewHorde);
 	OnHordeSpawned(NewHorde);
 	
@@ -163,7 +163,6 @@ void UFlecsSubsystem::SpawnZombieHorde(FVector SpawnLocation, float Radius, int3
 	if (!ZombieRenderer)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Failed to create UInstancedStaticMeshComponent."));
-		NewHorde->Destroy();
 		return;
 	}
 
@@ -194,7 +193,7 @@ void UFlecsSubsystem::SpawnZombieEntity(FVector Location, FRotator Rotation, UIn
     // Add the instance of the zombie's mesh to the ISM component
 	auto IsmID = ZombieRendererInst->AddInstance(FTransform(Rotation, Location));
 	AFlecsZombieHorde* HordeRef = Cast<AFlecsZombieHorde>(ZombieRendererInst->GetOwner());
-	
+
     // // Create the entity in Flecs
     auto Entity = GetEcsWorld()->entity()
 		.set<FlecsHordeRef>({HordeRef})
@@ -204,6 +203,10 @@ void UFlecsSubsystem::SpawnZombieEntity(FVector Location, FRotator Rotation, UIn
 		.set<FlecsTargetLocation>({FVector::ZeroVector})
 		.child_of<Horde>()
         .set_name(StringCast<ANSICHAR>(*FString::Printf(TEXT("Zombie%d_%d"), IsmID, ZombieRendererInst->GetOwner()->GetUniqueID())).Get());
+
+	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, TEXT("Added entity"));
+
+	UE_LOG(LogTemp, Error, TEXT("Added Entity"));
 }
 
 void UFlecsSubsystem::Deinitialize()
