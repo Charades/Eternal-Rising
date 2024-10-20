@@ -25,7 +25,6 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-	void SpawnBoid(const FVector& Location, const FRotator& Rotation);
 	UFloatingPawnMovement* MovementComponent;
 
 	// All the agents are now boids inside this Agents Manager
@@ -41,4 +40,7 @@ public:
 
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
+
+	void SpawnBoid(const FVector& Location, const FRotator& Rotation);
+	flecs::world* GetEcsWorld() const;
 };

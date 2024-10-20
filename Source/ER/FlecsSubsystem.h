@@ -75,7 +75,6 @@ public:
 	void InitFlecs(UStaticMesh* InMesh);
 
 	UFUNCTION(BlueprintCallable, Category="FLECS")
-	void SpawnZombieEntity(FVector Location, FRotator Rotation, UInstancedStaticMeshComponent* ZombieRendererInst);
 	void SpawnZombieHorde(FVector SpawnLocation, float Radius, int32 NumEntities);
 	
 	TWeakObjectPtr<UStaticMesh> DefaultMesh;

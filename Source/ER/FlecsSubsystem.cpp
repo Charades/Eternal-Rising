@@ -182,33 +182,11 @@ void UFlecsSubsystem::SpawnZombieHorde(FVector SpawnLocation, float Radius, int3
 		float X = FMath::Cos(Angle) * Radius;
 		float Y = FMath::Sin(Angle) * Radius;
 		FVector PointLocation = SpawnLocation + FVector(X, Y, 0.0f);
-
-		SpawnZombieEntity(PointLocation, FRotator::ZeroRotator, ZombieRenderer);
-
+		
+		NewHorde->SpawnBoid(PointLocation, FRotator::ZeroRotator);
+		
 		//DrawDebugSphere(GetWorld(), PointLocation, 20.0f, 12, FColor::Red, false, 10.0f);
 	}
-}
-
-// This function spawns a single zombie entity and adds it to the instanced static mesh component (ISM)
-void UFlecsSubsystem::SpawnZombieEntity(FVector Location, FRotator Rotation, UInstancedStaticMeshComponent* ZombieRendererInst)
-{
-    // Add the instance of the zombie's mesh to the ISM component
-	auto IsmID = ZombieRendererInst->AddInstance(FTransform(Rotation, Location));
-	AFlecsZombieHorde* HordeRef = Cast<AFlecsZombieHorde>(ZombieRendererInst->GetOwner());
-	
-    // // Create the entity in Flecs
-    auto Entity = GetEcsWorld()->entity()
-		.set<FlecsHordeRef>({HordeRef})
-        .set<FlecsIsmRef>({ZombieRendererInst})
-        .set<FlecsISMIndex>({IsmID})
-        .set<FlecsZombie>({100.0f})
-		.set<FlecsTargetLocation>({FVector::ZeroVector})
-		.child_of<Horde>()
-        .set_name(StringCast<ANSICHAR>(*FString::Printf(TEXT("Zombie%d_%d"), IsmID, ZombieRendererInst->GetOwner()->GetUniqueID())).Get());
-
-	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, TEXT("Added entity"));
-
-	UE_LOG(LogTemp, Error, TEXT("Added Entity"));
 }
 
 void UFlecsSubsystem::Deinitialize()

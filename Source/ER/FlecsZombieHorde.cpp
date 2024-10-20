@@ -3,6 +3,7 @@
 
 #include "FlecsZombieHorde.h"
 
+#include "FlecsSubsystem.h"
 #include "FlecsZombieBoid.h"
 #include "Components/InstancedStaticMeshComponent.h"
 
@@ -40,13 +41,41 @@ void AFlecsZombieHorde::BeginPlay()
 void AFlecsZombieHorde::SpawnBoid(const FVector& Location, const FRotator& Rotation)
 {
 	//Create new instanced mesh in location and rotation
-	const int32 MeshInstanceIndex = InstancedMeshComponent->AddInstance(FTransform(Rotation.Quaternion(), Location, FVector::OneVector));
+	int32 IsmID = InstancedMeshComponent->AddInstance(FTransform(Rotation.Quaternion(), Location, FVector::OneVector));
 	UFlecsZombieBoid* Boid = NewObject<UFlecsZombieBoid>(this);
-	Boid->Init(Location, Rotation, MeshInstanceIndex);
+	Boid->Init(Location, Rotation, IsmID);
 	{
 		FScopeLock ScopeLock(&MutexBoid);
-		Boids.Add(MeshInstanceIndex, Boid);
+		Boids.Add(IsmID, Boid);
 	}
+	
+	// Create the entity in Flecs
+	auto Entity = GetEcsWorld()->entity()
+		.set<FlecsHordeRef>({this})
+		.set<FlecsIsmRef>({this->InstancedMeshComponent})
+		.set<FlecsISMIndex>({IsmID})
+		.set<FlecsZombie>({100.0f})
+		.set<FlecsTargetLocation>({FVector::ZeroVector})
+		.child_of<Horde>()
+		.set_name(StringCast<ANSICHAR>(*FString::Printf(TEXT("Zombie%d_%d"), IsmID, this->InstancedMeshComponent->GetUniqueID())).Get());
+}
+
+flecs::world* AFlecsZombieHorde::GetEcsWorld() const
+{
+	// Get the game instance and then the FlecsSubsystem
+	UGameInstance* GameInstance = GetWorld()->GetGameInstance();
+	if (GameInstance)
+	{
+		UFlecsSubsystem* FlecsSubsystem = GameInstance->GetSubsystem<UFlecsSubsystem>();
+		if (FlecsSubsystem)
+		{
+			// Call the function to get the ECS world
+			return FlecsSubsystem->GetEcsWorld();
+		}
+	}
+    
+	// Return nullptr if anything goes wrong
+	return nullptr;
 }
 
 void AFlecsZombieHorde::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
