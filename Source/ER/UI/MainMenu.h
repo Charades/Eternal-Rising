@@ -21,9 +21,14 @@ public:
 
 	UPROPERTY(meta = (BindWidget))
 	UButton* ExitGameButton;
+	
+	UPROPERTY(meta = (BindWidget))
+	UButton* SettingsMenuButton;
+	
 
 	UMainMenu(const FObjectInitializer& ObjectInitializer);
-	
+
+	UFUNCTION()
 	void NativeConstruct() override;
 	void RemoveFromParent() override;
 	
@@ -31,12 +36,21 @@ public:
 	void OnServerBrowserButtonClicked();
 
 	UFUNCTION()
+	void OnSettingsMenuButtonClicked();
+
+	UFUNCTION()
 	void OnExitGameButtonClicked();
 
 private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<UServerBrowser> ServerBrowserWidget;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI", meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<UUserWidget> SettingsMenuWidget;
 
 	UPROPERTY()
 	UServerBrowser* ServerBrowser;
+
+	UPROPERTY()
+	UUserWidget* SettingsMenu;
 };
