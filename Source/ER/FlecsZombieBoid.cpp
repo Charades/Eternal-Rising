@@ -10,7 +10,30 @@
 
 
 UFlecsZombieBoid::UFlecsZombieBoid()
+	: AlignmentWeight(1.0f)
+	  , CohesionWeight(1.0f)
+	  , CohesionLerp(100.0f)
+	  , CollisionWeight(1.0f)
+	  , SeparationLerp(5.0f)
+	  , SeparationForce(100.0f)
+	  , SeparationWeight(0.8f)
+	  , BaseMovementSpeed(150.0f)
+	  , MaxMovementSpeed(250.0f)
+	  , VisionRadius(400.0f)
+	  , CollisionAvoidanceWeight(0),
+		CollisionDistance(400.0f)
+	  , MaxRotationSpeed(6.0f)
+	  , MeshIndex(0)
+	  , BoidTransform(FTransform::Identity)
+	  , AlignmentVector(0.0)
+	  , CohesionVector(0.0)
+	  , SeparationVector(0.0)
+	  , NegativeStimuliVector(0.0)
+	  , PositiveStimuliVector(0.0)
+	  , CollisionAvoidanceVector(0.0)
+	  , PhysicalRadius(45.0f)
 {
+	PhysicalRadius2 = 2 * PhysicalRadius;
 }
 
 void UFlecsZombieBoid::ResetComponents()
@@ -55,7 +78,7 @@ void UFlecsZombieBoid::ComputeMovementVector(AFlecsZombieHorde* Horde)
 	ResetComponents();
 	ComputeAlignmentVector();
 
-	if (NeighboringBoids.Num() > 0)
+	if (Neighbors.Num() > 0)
 	{
 		ComputeCohesionVector();
 		ComputeSeparationVector();
@@ -67,11 +90,18 @@ void UFlecsZombieBoid::ComputeMovementVector(AFlecsZombieHorde* Horde)
 	{
 		ComputeCollisionAvoidanceVector(Horde);
 	}
+
+	VectorAggregation();
+}
+
+void UFlecsZombieBoid::RemoveGlobalStimulus(AFlecsZombieStimulus* Stimulus)
+{
+	GlobalStimulus.Remove(Stimulus);
 }
 
 void UFlecsZombieBoid::ComputeAlignmentVector()
 {
-	for (const UFlecsZombieBoid* Boid : NeighboringBoids)
+	for (const UFlecsZombieBoid* Boid : Neighbors)
 	{
 		AlignmentVector += Boid->CurrentMoveVector.GetSafeNormal(NormalizeVectorTolerance);
 	}
@@ -82,26 +112,26 @@ void UFlecsZombieBoid::ComputeAlignmentVector()
 void UFlecsZombieBoid::ComputeCohesionVector()
 {
 	const FVector& Location = BoidTransform.GetLocation();
-	for (const UFlecsZombieBoid* Boid : NeighboringBoids)
+	for (const UFlecsZombieBoid* Boid : Neighbors)
 	{
 		CohesionVector += Boid->BoidTransform.GetLocation() - Location;
 	}
 
-	CohesionVector = (CohesionVector / NeighboringBoids.Num() / CohesionLerp) * CohesionWeight;
+	CohesionVector = (CohesionVector / Neighbors.Num() / CohesionLerp) * CohesionWeight;
 }
 
 void UFlecsZombieBoid::ComputeSeparationVector()
 {
 	const FVector& Location = BoidTransform.GetLocation();
 
-	for (const UFlecsZombieBoid* Boid : NeighboringBoids)
+	for (const UFlecsZombieBoid* Boid : Neighbors)
 	{
 		FVector Separation = Location - Boid->BoidTransform.GetLocation();
 		SeparationVector += Separation.GetSafeNormal(NormalizeVectorTolerance) / FMath::Abs(Separation.Size() - PhysicalRadius);
 	}
 
 	const FVector SeparationForceComponent = SeparationVector * SeparationForce;
-	SeparationVector += (SeparationForceComponent + SeparationForceComponent * (SeparationLerp / NeighboringBoids.Num())) * SeparationWeight;
+	SeparationVector += (SeparationForceComponent + SeparationForceComponent * (SeparationLerp / Neighbors.Num())) * SeparationWeight;
 }
 
 void UFlecsZombieBoid::ComputeCollisionAvoidanceVector(AFlecsZombieHorde* Horde)
@@ -121,8 +151,100 @@ void UFlecsZombieBoid::ComputeCollisionAvoidanceVector(AFlecsZombieHorde* Horde)
 	}
 }
 
+bool UFlecsZombieBoid::CheckStimulusVision()
+{
+	static TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes{{UEngineTypes::ConvertToObjectType(ECC_Destructible)}};
+	return UKismetSystemLibrary::SphereOverlapActors(
+		this, BoidTransform.GetLocation(),
+		VisionRadius,
+		ObjectTypes,
+		AFlecsZombieStimulus::StaticClass(),
+		TArray<AActor*>(),
+		StimulusInVision);
+}
+
 void UFlecsZombieBoid::ComputeAllStimuliVectors(AFlecsZombieHorde* Horde)
 {
+	CheckStimulusVision();
+
+	const FVector& Location = BoidTransform.GetLocation();
+	for (AActor* Stimulus : StimulusInVision)
+	{
+		ComputeStimuliComponentVector(Horde, Cast<AFlecsZombieStimulus>(Stimulus), Location);
+	}
+	
+	for (AFlecsZombieStimulus* Stimulus : Horde->GetGlobalStimulus())
+	{
+		ComputeStimuliComponentVector(Horde, Stimulus, Location, true);
+	}
+	
+
+	for (AFlecsZombieStimulus* Stimulus : PrivateGlobalStimulus)
+	{
+		ComputeStimuliComponentVector(Horde, Stimulus, Location, true);
+	}
+	
+	NegativeStimuliVector = NegativeStimuliMaxFactor * NegativeStimuliVector.GetSafeNormal(NormalizeVectorTolerance);
+}
+
+void UFlecsZombieBoid::ComputeStimuliComponentVector(AFlecsZombieHorde* Agent, AFlecsZombieStimulus* Stimulus, const FVector& Location, bool bIsGlobal)
+{
+	if (!IsValid(Stimulus) || ComputedStimulus.Contains(Stimulus))
+	{
+		return;
+	}
+
+	ComputedStimulus.Add(Stimulus);
+
+	if (Stimulus->Value < 0.0f)
+	{
+		CalculateNegativeStimuliVector(Stimulus, bIsGlobal);
+	}
+	else
+	{
+		if (FVector::Dist(Stimulus->GetActorLocation(), Location) <= (PhysicalRadius2 + Stimulus->Radius))
+		{
+			Stimulus->Consume(this, Agent);
+		}
+		else
+		{
+			CalculatePositiveStimuliVector(Stimulus, bIsGlobal);
+		}
+	}
+}
+
+void UFlecsZombieBoid::CalculateNegativeStimuliVector(const AFlecsZombieStimulus* Stimulus, bool bIsGlobal)
+{
+	check(Stimulus);
+	const FVector Direction = Stimulus->GetActorLocation() - BoidTransform.GetLocation();
+	const FVector NegativeStimuliComponentForce =
+		(Direction.GetSafeNormal(NormalizeVectorTolerance)
+			/ FMath::Abs(Direction.Size() - PhysicalRadius2))
+		* StimuliLerp * Stimulus->Value;
+	NegativeStimuliVector += NegativeStimuliComponentForce;
+	NegativeStimuliMaxFactor = FMath::Max(NegativeStimuliComponentForce.Size(), NegativeStimuliMaxFactor);
+}
+
+void UFlecsZombieBoid::CalculatePositiveStimuliVector(const AFlecsZombieStimulus* Stimulus, bool bIsGlobal)
+{
+	check(Stimulus);
+	const FVector Direction = Stimulus->GetActorLocation() - BoidTransform.GetLocation();
+	const float Svalue = bIsGlobal ? Stimulus->Value : Stimulus->Value / Direction.Size();
+	if (Svalue > PositiveStimuliMaxFactor)
+	{
+		PositiveStimuliMaxFactor = Svalue;
+		PositiveStimuliVector += Stimulus->Value * Direction.GetSafeNormal(NormalizeVectorTolerance);
+	}
+}
+
+void UFlecsZombieBoid::VectorAggregation()
+{
+	TargetMoveVector = AlignmentVector
+		+ CohesionVector
+		+ SeparationVector
+		+ NegativeStimuliVector
+		+ PositiveStimuliVector
+		+ CollisionAvoidanceVector;
 }
 
 void UFlecsZombieBoid::PerformGroundTrace(AFlecsZombieHorde* Horde, float TraceDistance,

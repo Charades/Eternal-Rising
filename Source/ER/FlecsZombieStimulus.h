@@ -13,6 +13,12 @@ class ER_API AFlecsZombieStimulus : public AActor
 	GENERATED_BODY()
 
 public:
+	AFlecsZombieStimulus() = default;
+
+	UFUNCTION(BlueprintNativeEvent, Category = AI)
+	void Consume(UFlecsZombieBoid* Boid, AFlecsZombieHorde* Agent = nullptr);
+	void Consume_Implementation(UFlecsZombieBoid* Boid, AFlecsZombieHorde* Agent = nullptr);
+
 	UPROPERTY(Category = AI, EditAnywhere, BlueprintReadWrite)
 	float Value = 0.0f;
 
