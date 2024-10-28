@@ -23,13 +23,20 @@ public:
 
 	void Update(float DeltaSeconds, AFlecsZombieHorde* Agent);
 
+	void RemoveGlobalStimulus(AFlecsZombieStimulus* Stimulus);
+	
 protected:
 	void ComputeMovementVector(AFlecsZombieHorde* HordeAgent);
 	void ComputeAlignmentVector();
+	bool CheckStimulusVision();
 	void ComputeCohesionVector();
 	void ComputeSeparationVector();
 	void ComputeCollisionAvoidanceVector(AFlecsZombieHorde* HordeAgent);
 	void ComputeAllStimuliVectors(AFlecsZombieHorde* HordeAgent);
+	void ComputeStimuliComponentVector(AFlecsZombieHorde* Agent, AFlecsZombieStimulus* Stimulus, const FVector& Location, bool bIsGlobal = false);
+	void CalculateNegativeStimuliVector(const AFlecsZombieStimulus* Stimulus, bool bIsGlobal = false);
+	void CalculatePositiveStimuliVector(const AFlecsZombieStimulus* Stimulus, bool bIsGlobal = false);
+	void VectorAggregation();
 	void PerformGroundTrace(AFlecsZombieHorde* HordeAgent, float TraceDistance, ECollisionChannel CollisionChannel = ECC_WorldStatic, float HeightOffset = 35.0f);
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flocking Component")
@@ -58,9 +65,11 @@ protected:
 	
 	TSet<AFlecsZombieStimulus*> StimulusSet;
 
+	TArray<AFlecsZombieStimulus*> GlobalStimulus;
+	
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flocking Component")
-	TArray<UFlecsZombieBoid*> NeighboringBoids;
+	TArray<UFlecsZombieBoid*> Neighbors;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flocking Component")
 	int32 MeshIndex;
@@ -76,6 +85,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flocking Component")
 	float MaxRotationSpeed;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flocking Component")
+	float VisionRadius;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flocking Component")
 	bool bAlignWithFloor = true;
@@ -118,6 +130,27 @@ public:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flocking Component")
 	float PhysicalRadius;
+
+	UPROPERTY(VisibleAnywhere , BlueprintReadOnly, Category = "Flocking Component")
+	TArray<AActor*> StimulusInVision;
+
+	UPROPERTY(EditAnywhere , BlueprintReadWrite, Category = "AI|Steering Behavior Component")
+	float NegativeStimuliMaxFactor;
+
+	UPROPERTY(EditAnywhere , BlueprintReadWrite, Category = "AI|Steering Behavior Component")
+	float PositiveStimuliMaxFactor;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Flocking Component")
+	float StimuliLerp;
+
+
+
+protected:
+	float PhysicalRadius2;
+	
+	TArray<AFlecsZombieStimulus*> PrivateGlobalStimulus;
+	
+	TSet<AFlecsZombieStimulus*> ComputedStimulus;
 	
 	const float NormalizeVectorTolerance = 0.0001f;
 };
