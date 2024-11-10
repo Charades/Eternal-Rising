@@ -39,7 +39,7 @@ void UServerBrowser::OnServerEntryClicked(USteamServerWrapper* Server, bool isSe
 	
 	if (Server)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, Server->ConnectionIP());
+		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, Server->GetSteamID());
 		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("Connection Info is valid"));
 	}
 	else

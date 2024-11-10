@@ -26,7 +26,7 @@ public:
 	void CallRequestServerList();
 
 	UFUNCTION(Exec)
-	void ConnectToServer(const FString& IPAddress, int32 Port);
+	void ConnectToServer(const FString& ServerSteamID);
 
 protected:
 	virtual void BeginPlay() override;

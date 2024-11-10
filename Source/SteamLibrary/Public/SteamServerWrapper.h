@@ -79,7 +79,7 @@ public:
     int32 GetPing() const;
 
     UFUNCTION(BlueprintCallable, Category = "Game Server")
-    int64 GetSteamID() const;
+    FString GetSteamID() const;
     
     UFUNCTION(BlueprintCallable, Category = "Game Server")
     FString ConnectionIP() const;

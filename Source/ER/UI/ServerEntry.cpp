@@ -17,11 +17,11 @@ void UServerEntry::NativeOnListItemObjectSet(UObject* ListItemObject)
 	MapNameText->SetText(FText::FromString(Server->GetMap()));
 	PlayerCountText->SetText(FText::FromString(Server->GetPlayerCount()));
 	ServerPingText->SetText(FText::AsNumber(Server->GetPing()));
-	ServerIP = Server->GetIP();
-	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Green, FString::Printf(TEXT("Stored IP: %s"), *ServerIP));
+	ServerID = Server->GetSteamID();
+	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Green, FString::Printf(TEXT("Stored ID: %s"), *ServerID));
 }
 
 FString UServerEntry::GetConnectionInfo() const
 {
-	return *ServerIP;
+	return *ServerID;
 }

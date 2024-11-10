@@ -6,11 +6,30 @@
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "FlecsAIController.h"
 #include "flecs.h"
+#include <algorithm>
+#include <cmath>
+#include <vector>
 #include "FlecsSubsystem.generated.h"
 
 struct FlecsTransform
 {
 	FTransform Value;
+};
+
+struct FlecsPosition
+{
+	FVector Value;
+};
+
+struct Agent {
+	FVector position;
+	FVector velocity;
+	std::vector<Agent*> neighbors;
+};
+
+struct FlecsVelocity
+{
+	FVector Value;
 };
 
 struct FlecsLastTraceTime {

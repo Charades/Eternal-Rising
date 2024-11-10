@@ -44,12 +44,12 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	// Called to bind functionality to input
+	// // Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
-
-	void SpawnBoid(const FVector& Location, const FRotator& Rotation);
-	void UpdateBoidNeighbourhood(UFlecsZombieBoid* Boid);
-	void RemoveGlobalStimulus(AFlecsZombieStimulus* Stimulus);
-	void UpdateBoids(float DeltaTime);
+	//
+	 void SpawnBoid(const FVector& Location, const FRotator& Rotation);
+	// void UpdateBoidNeighbourhood(UFlecsZombieBoid* Boid);
+	// void RemoveGlobalStimulus(AFlecsZombieStimulus* Stimulus);
+	// void UpdateBoids(float DeltaTime);
 	flecs::world* GetEcsWorld() const;
 };

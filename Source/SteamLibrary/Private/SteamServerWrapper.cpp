@@ -65,9 +65,9 @@ int32 USteamServerWrapper::GetPing() const
 	return Ping;
 }
 
-int64 USteamServerWrapper::GetSteamID() const
+FString USteamServerWrapper::GetSteamID() const
 {
-	return SteamID;
+	return LexToString(SteamID);
 }
 
 FString USteamServerWrapper::ConvertIPToString(uint32 IP) const

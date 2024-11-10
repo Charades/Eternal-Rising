@@ -40,14 +40,14 @@ void AFlecsZombieHorde::BeginPlay()
 
 void AFlecsZombieHorde::SpawnBoid(const FVector& Location, const FRotator& Rotation)
 {
-	//Create new instanced mesh in location and rotation
+	// //Create new instanced mesh in location and rotation
 	int32 IsmID = InstancedMeshComponent->AddInstance(FTransform(Rotation.Quaternion(), Location, FVector::OneVector));
-	UFlecsZombieBoid* Boid = NewObject<UFlecsZombieBoid>(this);
-	Boid->Init(Location, Rotation, IsmID);
-	{
-		FScopeLock ScopeLock(&MutexBoid);
-		Boids.Add(IsmID, Boid);
-	}
+	// UFlecsZombieBoid* Boid = NewObject<UFlecsZombieBoid>(this);
+	// Boid->Init(Location, Rotation, IsmID);
+	// {
+	// 	FScopeLock ScopeLock(&MutexBoid);
+	// 	Boids.Add(IsmID, Boid);
+	// }
 	
 	// Create the entity in Flecs
 	auto Entity = GetEcsWorld()->entity()
@@ -60,59 +60,59 @@ void AFlecsZombieHorde::SpawnBoid(const FVector& Location, const FRotator& Rotat
 		.set_name(StringCast<ANSICHAR>(*FString::Printf(TEXT("Zombie%d_%d"), IsmID, this->InstancedMeshComponent->GetUniqueID())).Get());
 }
 
-void AFlecsZombieHorde::UpdateBoidNeighbourhood(UFlecsZombieBoid* Boid)
-{
-	check(InstancedMeshComponent);
-	check(Boid);
-	TArray<int32> OverlappingInstances =
-		InstancedMeshComponent->GetInstancesOverlappingSphere(
-			Boid->BoidTransform.GetLocation(), Boid->VisionRadius, false);
-
-	Boid->Neighbors.Empty(Boid->Neighbors.Num());
-
-	for (const int32& Index : OverlappingInstances)
-	{
-		if (Boid->MeshIndex == Index)
-		{
-			continue;
-		}
-		UFlecsZombieBoid** OverlappingBoid = Boids.Find(Index);
-		if (OverlappingBoid != nullptr && IsValid(*OverlappingBoid))
-		{
-			Boid->Neighbors.Add(*OverlappingBoid);
-		}
-	}
-}
-
-void AFlecsZombieHorde::RemoveGlobalStimulus(AFlecsZombieStimulus* Stimulus)
-{
-	GlobalStimuli.Remove(Stimulus);
-	for (const TTuple<int, UFlecsZombieBoid*>& PairBoid : Boids)
-	{
-		check(IsValid(PairBoid.Value));
-		PairBoid.Value->RemoveGlobalStimulus(Stimulus);
-	}
-}
-
-void AFlecsZombieHorde::UpdateBoids(float DeltaTime)
-{
-	FScopeLock ScopeLock(&MutexBoid);
-	const int32 LastKey = Boids.end().Key();
-	
-	for (const TTuple<int, UFlecsZombieBoid*>& PairBoid : Boids)
-	{
-		UFlecsZombieBoid* Boid = PairBoid.Value;
-		UpdateBoidNeighbourhood(Boid);
-		Boid->Update(DeltaTime, this);
-
-		InstancedMeshComponent->UpdateInstanceTransform(
-			Boid->MeshIndex,
-			Boid->BoidTransform,
-			PairBoid.Key == LastKey
-		);
-	}
-}
-
+// void AFlecsZombieHorde::UpdateBoidNeighbourhood(UFlecsZombieBoid* Boid)
+// {
+// 	check(InstancedMeshComponent);
+// 	check(Boid);
+// 	TArray<int32> OverlappingInstances =
+// 		InstancedMeshComponent->GetInstancesOverlappingSphere(
+// 			Boid->BoidTransform.GetLocation(), Boid->VisionRadius, false);
+//
+// 	Boid->Neighbors.Empty(Boid->Neighbors.Num());
+//
+// 	for (const int32& Index : OverlappingInstances)
+// 	{
+// 		if (Boid->MeshIndex == Index)
+// 		{
+// 			continue;
+// 		}
+// 		UFlecsZombieBoid** OverlappingBoid = Boids.Find(Index);
+// 		if (OverlappingBoid != nullptr && IsValid(*OverlappingBoid))
+// 		{
+// 			Boid->Neighbors.Add(*OverlappingBoid);
+// 		}
+// 	}
+// }
+//
+// void AFlecsZombieHorde::RemoveGlobalStimulus(AFlecsZombieStimulus* Stimulus)
+// {
+// 	GlobalStimuli.Remove(Stimulus);
+// 	for (const TTuple<int, UFlecsZombieBoid*>& PairBoid : Boids)
+// 	{
+// 		check(IsValid(PairBoid.Value));
+// 		PairBoid.Value->RemoveGlobalStimulus(Stimulus);
+// 	}
+// }
+//
+// void AFlecsZombieHorde::UpdateBoids(float DeltaTime)
+// {
+// 	FScopeLock ScopeLock(&MutexBoid);
+// 	const int32 LastKey = Boids.end().Key();
+// 	
+// 	for (const TTuple<int, UFlecsZombieBoid*>& PairBoid : Boids)
+// 	{
+// 		UFlecsZombieBoid* Boid = PairBoid.Value;
+// 		UpdateBoidNeighbourhood(Boid);
+// 		Boid->Update(DeltaTime, this);
+//
+// 		InstancedMeshComponent->UpdateInstanceTransform(
+// 			Boid->MeshIndex,
+// 			Boid->BoidTransform,
+// 			PairBoid.Key == LastKey
+// 		);
+// 	}
+// }
+//
 flecs::world* AFlecsZombieHorde::GetEcsWorld() const
 {
 	// Get the game instance and then the FlecsSubsystem
@@ -140,10 +140,10 @@ void AFlecsZombieHorde::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 void AFlecsZombieHorde::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	if (Boids.Num() == 0)
-	{
-		return;
-	}
-
-	UpdateBoids(DeltaTime);
+	// if (Boids.Num() == 0)
+	// {
+	// 	return;
+	// }
+	// GEngine->AddOnScreenDebugMessage(-1, 0.2f, FColor::Green, FString::Printf(TEXT("Z Level for Actor: %f"), GetActorLocation().Z));
+	// UpdateBoids(DeltaTime);
 }

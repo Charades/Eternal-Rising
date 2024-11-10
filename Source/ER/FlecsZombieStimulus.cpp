@@ -7,10 +7,10 @@
 
 void AFlecsZombieStimulus::Consume_Implementation(UFlecsZombieBoid* Boid, AFlecsZombieHorde* Agent)
 {
-	if (IsValid(Agent))
-	{
-		Agent->RemoveGlobalStimulus(this);
-	}
-
-	Destroy();
+	// if (IsValid(Agent))
+	// {
+	// 	Agent->RemoveGlobalStimulus(this);
+	// }
+	//
+	// Destroy();
 }
