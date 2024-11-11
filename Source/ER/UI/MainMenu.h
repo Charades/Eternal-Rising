@@ -6,7 +6,13 @@
 #include "ServerBrowser.h"
 #include "Blueprint/UserWidget.h"
 #include "Components/Button.h"
-#include "Kismet/GameplayStatics.h"
+#include "Components/Image.h"
+#include "ImageUtils.h"
+#include "OnlineSubsystem.h"
+#include "OnlineSubsystemSteam.h"
+#include "OnlineSubsystemUtils.h"
+#include "Interfaces/OnlineIdentityInterface.h"
+#include "Interfaces/OnlineUserInterface.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "MainMenu.generated.h"
 
@@ -25,11 +31,18 @@ public:
 	UPROPERTY(meta = (BindWidget))
 	UButton* SettingsMenuButton;
 	
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* AccountNameText;
 
+	UPROPERTY(meta = (BindWidget))
+	UImage* AvatarImage;
+	
 	UMainMenu(const FObjectInitializer& ObjectInitializer);
 
 	UFUNCTION()
 	void NativeConstruct() override;
+	void UpdateSteamInfo();
+	void GetSteamAvatar();
 	void RemoveFromParent() override;
 	
 	UFUNCTION()

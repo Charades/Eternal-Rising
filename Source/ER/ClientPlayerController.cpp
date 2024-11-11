@@ -97,22 +97,38 @@ void AClientPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	Super::EndPlay(EndPlayReason);
 }
 
-void AClientPlayerController::ConnectToServer(const FString& IPAddress, int32 Port)
+void AClientPlayerController::ConnectToServer(const FString& ServerSteamID)
 {
-	if (IPAddress.IsEmpty())
+	if (!IsLocalPlayerController())
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, TEXT("Server address is empty."));
+		UE_LOG(LogTemp, Warning, TEXT("Cannot connect from non-local player controller."));
 		return;
 	}
 
-	SteamNetworkingIPAddr ServerAddress;
-	ServerAddress.Clear();
-	ServerAddress.ParseString(TCHAR_TO_ANSI(*IPAddress));
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		UE_LOG(LogTemp, Error, TEXT("World is null, cannot connect to server."));
+		return;
+	}
 
-	ServerAddress.m_port = Port;
-	ServerConnection = SteamNetworkingSockets()->ConnectByIPAddress(ServerAddress, 0, nullptr);
+	// Validate the Steam ID
+	if (ServerSteamID.IsEmpty())
+	{
+		UE_LOG(LogTemp, Error, TEXT("Invalid Steam ID provided."));
+		return;
+	}
+
+	// Construct the Steam connection URL using the Steam ID
+	FString TravelURL = FString::Printf(TEXT("steam.%s"), *ServerSteamID);
+
+	// Log the connection attempt
+	UE_LOG(LogTemp, Log, TEXT("Attempting to connect to Steam server with SteamID: %s"), *ServerSteamID);
+
+	// Use ClientTravel to connect to the server
+	ClientTravel(TravelURL, ETravelType::TRAVEL_Absolute);
 	
-	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Green, FString::Printf(TEXT("Connecting to server at %s:%d"), *IPAddress, Port));
+	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Green, FString::Printf(TEXT("Connecting to server at %s:%d"), *ServerSteamID));
 }
 
 void AClientPlayerController::SetupInputComponent()

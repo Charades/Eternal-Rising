@@ -18,11 +18,11 @@ void AFlecsAIController::MoveToRandomLocation()
 	if (ControlledPawn)
 	{
 		//GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Green, TEXT("Test"));
-		UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
-		FNavLocation RandomLocation;
-		const float SearchRadius = 1000.0f; // 1000 units search radius
-		NavSys->GetRandomPointInNavigableRadius(ControlledPawn->GetActorLocation(), SearchRadius, RandomLocation);
-		MoveToLocation(RandomLocation.Location, 100.0f);
+		//UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
+		//FNavLocation RandomLocation;
+		//const float SearchRadius = 1000.0f; // 1000 units search radius
+		//NavSys->GetRandomPointInNavigableRadius(ControlledPawn->GetActorLocation(), SearchRadius, RandomLocation);
+		//MoveToLocation(RandomLocation.Location, 100.0f);
 	}
 }
 
@@ -54,9 +54,9 @@ void AFlecsAIController::OnPossess(APawn *InPawn) {
 
 	Super::OnPossess(InPawn);
 	
-	FVector Pos = InPawn->GetActorLocation() + FVector(100.0f, 0.0f, 0.0f);
+	//FVector Pos = InPawn->GetActorLocation() + FVector(100.0f, 0.0f, 0.0f);
 	//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, FString::Printf(TEXT("Moving to: %s"), *Pos.ToString()));
-	MoveToLocation(Pos, 10.0f);
+	//MoveToLocation(Pos, 10.0f);
 };
 
 // Called every frame

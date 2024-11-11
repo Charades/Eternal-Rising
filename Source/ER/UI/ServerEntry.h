@@ -12,7 +12,7 @@ class ER_API UServerEntry : public UUserWidget, public IUserObjectListEntry
 	GENERATED_BODY()
 	
 private:
-	FString ServerIP;
+	FString ServerID;
 	
 public:
 	UPROPERTY(meta = (BindWidget))
