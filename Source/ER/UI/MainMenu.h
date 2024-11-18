@@ -14,6 +14,8 @@
 #include "Interfaces/OnlineIdentityInterface.h"
 #include "Interfaces/OnlineUserInterface.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Components/AudioComponent.h"
+#include "Sound/SoundCue.h"
 #include "MainMenu.generated.h"
 
 UCLASS()
@@ -30,6 +32,12 @@ public:
 	
 	UPROPERTY(meta = (BindWidget))
 	UButton* SettingsMenuButton;
+
+	UPROPERTY(meta = (BindWidget))
+	UButton* SteamProfileButton;
+
+	UPROPERTY(meta = (BindWidget))
+	UButton* MusicToggleButton;
 	
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* AccountNameText;
@@ -38,12 +46,10 @@ public:
 	UImage* AvatarImage;
 	
 	UMainMenu(const FObjectInitializer& ObjectInitializer);
-
-	UFUNCTION()
-	void NativeConstruct() override;
+	
 	void UpdateSteamInfo();
 	void GetSteamAvatar();
-	void RemoveFromParent() override;
+	void RemoveFromParent();
 	
 	UFUNCTION()
 	void OnServerBrowserButtonClicked();
@@ -54,6 +60,23 @@ public:
 	UFUNCTION()
 	void OnExitGameButtonClicked();
 
+	UFUNCTION()
+	void OnSteamProfileButtonClicked();
+
+
+protected:
+	void NativeConstruct() override;
+	virtual void NativeDestruct() override;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Audio")
+	USoundCue* BackgroundMusic;
+
+	UFUNCTION(BlueprintCallable, Category = "Audio")
+	void StartBackgroundMusic(USoundCue* MusicToPlay);
+    
+	UFUNCTION(BlueprintCallable, Category = "Audio")
+	void StopBackgroundMusic();
+	
 private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<UServerBrowser> ServerBrowserWidget;
@@ -66,4 +89,7 @@ private:
 
 	UPROPERTY()
 	UUserWidget* SettingsMenu;
+
+	UPROPERTY()
+	UAudioComponent* AudioComponent;
 };

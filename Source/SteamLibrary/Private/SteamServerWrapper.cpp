@@ -16,6 +16,7 @@ void USteamServerWrapper::Initialize(gameserveritem_t* pGameServerItem)
 {
 	IPAddress = ConvertIPToString(pGameServerItem->m_NetAdr.GetIP());
 	ConnectionPort = pGameServerItem->m_NetAdr.GetConnectionPort();
+	QueryPort = pGameServerItem->m_NetAdr.GetQueryPort();
 	Ping = pGameServerItem->m_nPing;
 	Map = FString(pGameServerItem->m_szMap);
 	GameDescription = FString(pGameServerItem->m_szGameDescription);
@@ -40,6 +41,11 @@ FString USteamServerWrapper::GetMap() const
 	return Map;
 }
 
+int32 USteamServerWrapper::GetPlayers() const
+{
+	return Players;
+}
+
 FString USteamServerWrapper::GetPlayerCount() const
 {
 	return FString::Printf(TEXT("%d/%d"), Players, MaxPlayers);
@@ -58,6 +64,11 @@ FString USteamServerWrapper::GetIP() const
 int32 USteamServerWrapper::GetPort() const
 {
 	return ConnectionPort;
+}
+
+int32 USteamServerWrapper::GetQueryPort() const
+{
+	return QueryPort;
 }
 
 int32 USteamServerWrapper::GetPing() const

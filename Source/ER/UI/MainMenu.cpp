@@ -3,6 +3,7 @@
 
 #include "MainMenu.h"
 #include "Components/Button.h"
+#include "Kismet/GameplayStatics.h"
 
 UMainMenu::UMainMenu(const FObjectInitializer& ObjectInitializer): Super(ObjectInitializer),
                                                                    ServerBrowserButton(nullptr),
@@ -30,6 +31,7 @@ void UMainMenu::NativeConstruct()
 	UpdateSteamInfo();
 	ServerBrowserButton = Cast<UButton>(GetWidgetFromName(TEXT("ServerBrowserButton")));
 	ExitGameButton = Cast<UButton>(GetWidgetFromName(TEXT("ExitGameButton")));
+	MusicToggleButton = Cast<UButton>(GetWidgetFromName(TEXT("MusicToggleButton")));
 	
 	if (ServerBrowserButton)
 	{
@@ -40,10 +42,38 @@ void UMainMenu::NativeConstruct()
 	{
 		SettingsMenuButton->OnClicked.AddDynamic(this, &UMainMenu::OnSettingsMenuButtonClicked);
 	}
+
+	if (SteamProfileButton)
+	{
+		SteamProfileButton->OnClicked.AddDynamic(this, &UMainMenu::OnSteamProfileButtonClicked);
+	}
 	
 	if (ExitGameButton)
 	{
 		ExitGameButton->OnClicked.AddDynamic(this, &UMainMenu::OnExitGameButtonClicked);
+	}
+
+	if (MusicToggleButton)
+	{
+		MusicToggleButton->OnClicked.AddDynamic(this, &UMainMenu::StopBackgroundMusic);
+	}
+	
+	if (BackgroundMusic)
+	{
+		StartBackgroundMusic(BackgroundMusic);
+	}
+}
+
+void UMainMenu::NativeDestruct()
+{
+	Super::NativeDestruct();
+    
+	// Clean up the audio component if it exists
+	if (AudioComponent)
+	{
+		AudioComponent->Stop();
+		AudioComponent->DestroyComponent();
+		AudioComponent = nullptr;
 	}
 }
 
@@ -119,6 +149,25 @@ void UMainMenu::RemoveFromParent()
 	Super::RemoveFromParent();
 }
 
+void UMainMenu::OnSteamProfileButtonClicked()
+{
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("Steam profile button clicked!"));
+	}
+
+	if (SteamAPI_Init())
+	{
+		// Open the Steam Overlay to the "Friends" section
+		SteamFriends()->ActivateGameOverlay("Friends");
+		UE_LOG(LogTemp, Log, TEXT("Steam Overlay opened successfully."));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Steam API not initialized. Unable to open Steam Overlay."));
+	}
+}
+
 void UMainMenu::OnServerBrowserButtonClicked()
 {
 	if (GEngine)
@@ -190,4 +239,28 @@ void UMainMenu::OnExitGameButtonClicked()
 	}
 }
 
+void UMainMenu::StartBackgroundMusic(USoundCue* MusicToPlay)
+{
+	// Stop any existing music first
+	StopBackgroundMusic();
+    
+	if (MusicToPlay)
+	{
+		// Create and start the background music
+		AudioComponent = UGameplayStatics::SpawnSound2D(this, MusicToPlay);
+        
+		if (AudioComponent)
+		{
+			AudioComponent->bAutoDestroy = false;
+			AudioComponent->bIsUISound = true;
+		}
+	}
+}
 
+void UMainMenu::StopBackgroundMusic()
+{
+	if (AudioComponent)
+	{
+		AudioComponent->Stop();
+	}
+}

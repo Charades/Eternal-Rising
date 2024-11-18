@@ -51,6 +51,11 @@
 			"Name": "CPathfinding",
 			"Enabled": false,
 			"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/product/c533ad0234c540fb81bdfa7bd55d3514"
+		},
+		{
+			"Name": "FlowFieldPathfinding",
+			"Enabled": true,
+			"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/product/a2f73d822568406d87c94b6f47a86bcb"
 		}
 	]
 }
