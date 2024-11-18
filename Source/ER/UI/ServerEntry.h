@@ -4,6 +4,7 @@
 #include "Blueprint/UserWidget.h"
 #include "Blueprint/IUserObjectListEntry.h"
 #include "Components/TextBlock.h"
+#include "Components/Border.h"
 #include "ServerEntry.generated.h"
 
 UCLASS(BlueprintType)
@@ -26,10 +27,19 @@ public:
 
 	UPROPERTY(meta = (BindWidget))
 	class UTextBlock* ServerPingText;
-
+	
+	UPROPERTY(meta = (BindWidget))
+	class UBorder* EntryBorder;
+	
 	FString GetConnectionInfo() const;
 	
+	UFUNCTION(BlueprintCallable, Category = "UI")
+	void SetBorderColor(const FLinearColor& NewColor);
+
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeOnListItemObjectSet(UObject* ListItemObject) override;
+	
+	virtual void NativeOnMouseEnter(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
+	virtual void NativeOnMouseLeave(const FPointerEvent& InMouseEvent) override;
 };

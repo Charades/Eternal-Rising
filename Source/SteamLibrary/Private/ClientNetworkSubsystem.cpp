@@ -35,11 +35,11 @@ void UClientNetworkSubsystem::Deinitialize()
 	Super::Deinitialize();
 }
 
-
-void UClientNetworkSubsystem::RequestServerList()
+void UClientNetworkSubsystem::RequestInternetServerList(const TArray<FString>& FilterKeys, const TArray<FString>& FilterValues, bool bFilterPassword)
 {
 	if (bRequestingServers)
 	{
+		SteamMatchmakingServers()->CancelQuery(ServerRequestHandle);
 		return;
 	}
 	
@@ -48,6 +48,8 @@ void UClientNetworkSubsystem::RequestServerList()
 		SteamMatchmakingServers()->ReleaseRequest(ServerRequestHandle);
 		ServerRequestHandle = nullptr;
 	}
+
+	bHasPassword = bFilterPassword;
 	
 	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("Refreshing internet servers"));
 
@@ -57,19 +59,100 @@ void UClientNetworkSubsystem::RequestServerList()
 
 	ServerListResponse = new FSteamServerCallback(this);
 
-	MatchMakingKeyValuePair_t pFilters[2];
-	MatchMakingKeyValuePair_t *pFilter = pFilters;
-	
-	strncpy_s(pFilters[0].m_szKey, "gamedir", sizeof(pFilters[0].m_szKey));
-	strncpy_s(pFilters[0].m_szValue, "spacewar", sizeof(pFilters[0].m_szValue));
+	if (FilterKeys.Num() != FilterValues.Num())
+	{
+		UE_LOG(LogTemp, Error, TEXT("FilterKeys and FilterValues array sizes do not match."));
+		return;
+	}
 
-	strncpy_s(pFilters[1].m_szKey, "secure", sizeof(pFilters[1].m_szKey));
-	strncpy_s(pFilters[1].m_szValue, "1", sizeof(pFilters[1].m_szValue));
+	// Create an array of filters
+	TArray<MatchMakingKeyValuePair_t> Filters;
+	for (int32 i = 0; i < FilterKeys.Num(); ++i)
+	{
+		MatchMakingKeyValuePair_t Filter;
+		strncpy_s(Filter.m_szKey, TCHAR_TO_ANSI(*FilterKeys[i]), sizeof(Filter.m_szKey));
+		
+		if (FilterValues[i].IsEmpty())
+		{
+			Filter.m_szValue[0] = '\0'; // Set value to an empty string for boolean filters
+			GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Green, FString::Printf(TEXT("Filter %d: Key = %s, Value = (empty)"), i, *FilterKeys[i]));
+		}
+		else
+		{
+			strncpy_s(Filter.m_szValue, TCHAR_TO_ANSI(*FilterValues[i]), sizeof(Filter.m_szValue));
+			GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Green, FString::Printf(TEXT("Filter %d: Key = %s, Value = %s"), i, *FilterKeys[i], *FilterValues[i]));
+		}
+		
+		Filters.Add(Filter);
+	}
+	
+	MatchMakingKeyValuePair_t* pFilters = Filters.GetData();
 	
 	ServerRequestHandle = SteamMatchmakingServers()->RequestInternetServerList(
 		480, // Your Steam App ID
-		&pFilter, // Filters
-		2, // Number of filters
+		&pFilters, // Filters
+		Filters.Num(), // Number of filters
+		ServerListResponse // Request callback
+	);
+}
+
+void UClientNetworkSubsystem::RequestFavoriteServerList(const TArray<FString>& FilterKeys, const TArray<FString>& FilterValues, bool bFilterPassword)
+{
+	if (bRequestingServers)
+	{
+		SteamMatchmakingServers()->CancelQuery(ServerRequestHandle);
+		return;
+	}
+	
+	if (ServerRequestHandle)
+	{
+		SteamMatchmakingServers()->ReleaseRequest(ServerRequestHandle);
+		ServerRequestHandle = nullptr;
+	}
+
+	bHasPassword = bFilterPassword;
+	
+	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("Refreshing internet servers"));
+
+	bRequestingServers = true;
+	nServers = 0;
+	GameServerList.Empty();
+
+	ServerListResponse = new FSteamServerCallback(this);
+
+	if (FilterKeys.Num() != FilterValues.Num())
+	{
+		UE_LOG(LogTemp, Error, TEXT("FilterKeys and FilterValues array sizes do not match."));
+		return;
+	}
+
+	// Create an array of filters
+	TArray<MatchMakingKeyValuePair_t> Filters;
+	for (int32 i = 0; i < FilterKeys.Num(); ++i)
+	{
+		MatchMakingKeyValuePair_t Filter;
+		strncpy_s(Filter.m_szKey, TCHAR_TO_ANSI(*FilterKeys[i]), sizeof(Filter.m_szKey));
+		
+		if (FilterValues[i].IsEmpty())
+		{
+			Filter.m_szValue[0] = '\0'; // Set value to an empty string for boolean filters
+			GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Green, FString::Printf(TEXT("Filter %d: Key = %s, Value = (empty)"), i, *FilterKeys[i]));
+		}
+		else
+		{
+			strncpy_s(Filter.m_szValue, TCHAR_TO_ANSI(*FilterValues[i]), sizeof(Filter.m_szValue));
+			GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Green, FString::Printf(TEXT("Filter %d: Key = %s, Value = %s"), i, *FilterKeys[i], *FilterValues[i]));
+		}
+		
+		Filters.Add(Filter);
+	}
+	
+	MatchMakingKeyValuePair_t* pFilters = Filters.GetData();
+	
+	ServerRequestHandle = SteamMatchmakingServers()->RequestFavoritesServerList(
+		480, // Your Steam App ID
+		&pFilters, // Filters
+		Filters.Num(), // Number of filters
 		ServerListResponse // Request callback
 	);
 }
@@ -86,11 +169,22 @@ void UClientNetworkSubsystem::OnServerResponded(HServerListRequest Request, int 
 			USteamServerWrapper* NewServer = NewObject<USteamServerWrapper>(this);
 			if (NewServer)
 			{
-				// Initialize the new server object and add it to the list
-				NewServer->Initialize(Server);
-				GameServerList.Add(NewServer);
-				//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Green, GameServerList.Last()->GetName());
-				nServers++;
+				if (Server->m_bPassword && bHasPassword)
+				{
+					// Initialize the new server object and add it to the list
+					NewServer->Initialize(Server);
+					GameServerList.Add(NewServer);
+					//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Green, GameServerList.Last()->GetName());
+					nServers++;
+				}
+				else if (!bHasPassword)
+				{
+					// Initialize the new server object and add it to the list
+					NewServer->Initialize(Server);
+					GameServerList.Add(NewServer);
+					//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Green, GameServerList.Last()->GetName());
+					nServers++;
+				}
 			}
 			else
 			{

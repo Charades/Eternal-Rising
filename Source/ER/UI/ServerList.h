@@ -16,7 +16,12 @@ class ER_API UServerList : public UListView
 
 public:
 	FOnServerListItemSelectionChanged OnServerListItemSelectionChanged;
+	void ClearSelections();
 	
 private:
 	virtual void OnSelectionChangedInternal(UObject* FirstSelectedItem) override;
+
+protected:
+	UPROPERTY()
+	TObjectPtr<UUserWidget> PreviousSelectedWidget;
 };

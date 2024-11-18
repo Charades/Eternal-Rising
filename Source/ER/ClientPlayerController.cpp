@@ -42,26 +42,26 @@ AClientPlayerController::AClientPlayerController()
 	}
 }
 
-void AClientPlayerController::CallRequestServerList()
-{
-	UGameInstance* GameInstance = GetGameInstance();
-	if (GameInstance)
-	{
-		UClientNetworkSubsystem* ClientNetworkSubsystem = GameInstance->GetSubsystem<UClientNetworkSubsystem>();
-		if (ClientNetworkSubsystem)
-		{
-			ClientNetworkSubsystem->RequestServerList();
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("ClientNetworkSubsystem is null"));
-		}
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("GameInstance is null"));
-	}
-}
+// void AClientPlayerController::CallRequestServerList()
+// {
+// 	UGameInstance* GameInstance = GetGameInstance();
+// 	if (GameInstance)
+// 	{
+// 		UClientNetworkSubsystem* ClientNetworkSubsystem = GameInstance->GetSubsystem<UClientNetworkSubsystem>();
+// 		if (ClientNetworkSubsystem)
+// 		{
+// 			ClientNetworkSubsystem->RequestServerList();
+// 		}
+// 		else
+// 		{
+// 			UE_LOG(LogTemp, Warning, TEXT("ClientNetworkSubsystem is null"));
+// 		}
+// 	}
+// 	else
+// 	{
+// 		UE_LOG(LogTemp, Warning, TEXT("GameInstance is null"));
+// 	}
+// }
 
 void AClientPlayerController::BeginPlay()
 {

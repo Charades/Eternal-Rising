@@ -23,7 +23,8 @@ public:
 	FOnServerListUpdated OnServerListUpdated;
 	void OnServerFailedToRespond(HServerListRequest Request, int Index);
 	void OnServerRefreshComplete(HServerListRequest HRequest, EMatchMakingServerResponse Response);
-	void RequestServerList();
+	void RequestInternetServerList(const TArray<FString>& FilterKeys, const TArray<FString>& FilterValues, bool bFilterPassword);
+	void RequestFavoriteServerList(const TArray<FString>& FilterKeys, const TArray<FString>& FilterValues, bool bFilterPassword);
 	void OnServerResponded(HServerListRequest Request, int Index);
 	
 	UPROPERTY(BlueprintReadOnly, Category = "Game Server")
@@ -33,6 +34,7 @@ private:
 	HServerListRequest ServerRequestHandle;
 	FSteamServerCallback* ServerListResponse;
 	bool bRequestingServers;
+	bool bHasPassword;
 	int nServers;
 
 protected:

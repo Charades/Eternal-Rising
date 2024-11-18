@@ -22,6 +22,9 @@ public:
     int32 ConnectionPort;  // Port for game clients to connect to for this server
 
     UPROPERTY(BlueprintReadOnly, Category = "Game Server")
+    int32 QueryPort;  // Port for game clients to connect to for this server
+
+    UPROPERTY(BlueprintReadOnly, Category = "Game Server")
     int32 Ping;  // current ping time in milliseconds
 
     UPROPERTY(BlueprintReadOnly, Category = "Game Server")
@@ -75,6 +78,12 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Game Server")
     int32 GetPort() const;
 
+    UFUNCTION(BlueprintCallable, Category = "Game Server")
+    int32 GetQueryPort() const;
+
+    UFUNCTION(BlueprintCallable, Category = "Game Server")
+    int32 GetPlayers() const;
+    
     UFUNCTION(BlueprintCallable, Category = "Game Server")
     int32 GetPing() const;
 
