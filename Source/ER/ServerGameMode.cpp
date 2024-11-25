@@ -3,6 +3,7 @@
 
 #include "ServerGameMode.h"
 
+#include "GameFramework/PlayerState.h"
 #include "Online/OnlineSessionNames.h"
 
 AServerGameMode::AServerGameMode()
@@ -97,6 +98,10 @@ void AServerGameMode::OnCreateSessionComplete(FName SessionName, bool bWasSucces
 	}
 }
 
+void AServerGameMode::OnStartOnlineGameComplete(FName SessionName, bool bWasSuccessful)
+{
+}
+
 void AServerGameMode::PostLogin(APlayerController* NewPlayer)
 {
 	Super::PostLogin(NewPlayer);
@@ -107,11 +112,12 @@ void AServerGameMode::PostLogin(APlayerController* NewPlayer)
 
 void AServerGameMode::Logout(AController* Exiting)
 {
-	Super::Logout(Exiting);
-
 	// Unregister the player from the session
 	UnregisterPlayer(Exiting);
+
+	Super::Logout(Exiting);
 }
+
 
 void AServerGameMode::RegisterPlayer(APlayerController* NewPlayer)
 {
@@ -121,57 +127,75 @@ void AServerGameMode::RegisterPlayer(APlayerController* NewPlayer)
 		return;
 	}
 
-	TSharedPtr<const FUniqueNetId> PlayerId = IOnlineSubsystem::Get()->GetIdentityInterface()->GetUniquePlayerId(0);
-	if (PlayerId.IsValid())
+	// Get PlayerState and check if it's valid
+	APlayerState* PlayerState = NewPlayer->PlayerState;
+	if (!PlayerState)
 	{
-		Sessions->RegisterPlayer(FName("GameSession"), *PlayerId, false);
-		UE_LOG(LogTemp, Log, TEXT("Player registered: %s"), *PlayerId->ToString());
+		UE_LOG(LogTemp, Warning, TEXT("PlayerState is invalid."));
+		return;
+	}
+
+	FUniqueNetIdRepl UniqueNetIdRepl = PlayerState->GetUniqueId();
+	if (!UniqueNetIdRepl.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Player UniqueNetId is invalid."));
+		return;
+	}
+	
+	if (UniqueNetIdRepl.IsValid())
+	{
+		Sessions->RegisterPlayer(FName("GameSession"), *UniqueNetIdRepl.GetUniqueNetId(), false);
+		UE_LOG(LogTemp, Log, TEXT("Player registered: %s"), *UniqueNetIdRepl->ToString());
 	}
 }
 
 void AServerGameMode::UnregisterPlayer(AController* Exiting)
 {
-	IOnlineSessionPtr Sessions = IOnlineSubsystem::Get()->GetSessionInterface();
-	if (!Sessions.IsValid() || !Exiting)
+	if (!Exiting)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("Exiting controller is null."));
 		return;
 	}
 
 	APlayerController* PlayerController = Cast<APlayerController>(Exiting);
 	if (!PlayerController)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("Exiting controller is not a player controller."));
 		return;
 	}
 
-	TSharedPtr<const FUniqueNetId> PlayerId = IOnlineSubsystem::Get()->GetIdentityInterface()->GetUniquePlayerId(0);
-	if (PlayerId.IsValid())
+	IOnlineSessionPtr Sessions = IOnlineSubsystem::Get()->GetSessionInterface();
+	if (!Sessions.IsValid())
 	{
-		Sessions->UnregisterPlayer(FName("GameSession"), *PlayerId);
-		UE_LOG(LogTemp, Log, TEXT("Player unregistered: %s"), *PlayerId->ToString());
-	}
-}
-
-void AServerGameMode::OnStartOnlineGameComplete(FName SessionName, bool bWasSuccessful)
-{
-	GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, FString::Printf(TEXT("OnStartSessionComplete %s, %d"), *SessionName.ToString(), bWasSuccessful));
-
-	// Get the Online Subsystem so we can get the Session Interface
-	IOnlineSubsystem* OnlineSub = IOnlineSubsystem::Get();
-	if (OnlineSub)
-	{
-		// Get the Session Interface to clear the Delegate
-		IOnlineSessionPtr Sessions = OnlineSub->GetSessionInterface();
-		if (Sessions.IsValid())
-		{
-			// Clear the delegate, since we are done with this call
-			Sessions->ClearOnStartSessionCompleteDelegate_Handle(OnStartSessionCompleteDelegateHandle);
-		}
+		UE_LOG(LogTemp, Warning, TEXT("Online session interface is invalid."));
+		return;
 	}
 
-	// If the start was successful, we can open a NewMap if we want. Make sure to use "listen" as a parameter!
-	if (bWasSuccessful)
+	// Get PlayerState and check if it's valid
+	APlayerState* PlayerState = PlayerController->PlayerState;
+	if (!PlayerState)
 	{
-		//UGameplayStatics::OpenLevel(GetWorld(), "NewMap", true, "listen");
+		UE_LOG(LogTemp, Warning, TEXT("PlayerState is invalid."));
+		return;
+	}
+
+	// Get the unique player ID from PlayerState
+	FUniqueNetIdRepl UniqueNetIdRepl = PlayerState->GetUniqueId();
+	if (!UniqueNetIdRepl.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Player UniqueNetId is invalid."));
+		return;
+	}
+
+	// Unregister the player
+	bool bUnregisterSuccess = Sessions->UnregisterPlayer(FName("GameSession"), *UniqueNetIdRepl.GetUniqueNetId());
+	if (bUnregisterSuccess)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Player unregistered successfully: %s"), *UniqueNetIdRepl->ToString());
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Failed to unregister player: %s"), *UniqueNetIdRepl->ToString());
 	}
 }
 

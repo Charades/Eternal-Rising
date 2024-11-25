@@ -36,7 +36,6 @@ protected:
 	virtual void Tick(float DeltaSeconds) override;
 	void RegisterPlayer(APlayerController* NewPlayer);
 	void UnregisterPlayer(AController* Exiting);
-	void UpdateSessionPlayerCount();
 
 private:
 	void InitSteamServer();

@@ -2,6 +2,8 @@
 
 
 #include "ClientPlayerController.h"
+
+#include "ClientGameInstance.h"
 #include "EnhancedInputSubsystems.h"
 #include "FlecsZombieHorde.h"
 #include "InputMappingContext.h"
@@ -9,18 +11,28 @@
 #include "SpawnActor.h"
 #include "Blueprint/UserWidget.h"
 #include "UI/EscapeMenu.h"
+#include "Net/UnrealNetwork.h"
 #include "Steam/steam_api.h"
 #include "Steam/isteamnetworkingsockets.h"
+#include "ER/FlecsSubsystem.h"
 #include "Steam/isteamnetworkingutils.h"
 
 AClientPlayerController::AClientPlayerController()
 {
 	// Find the InputMappingContext asset in the content browser
-	static ConstructorHelpers::FObjectFinder<UInputMappingContext> MappingContextFinder(
+	static ConstructorHelpers::FObjectFinder<UInputMappingContext> DefaultMappingContextFinder(
 		TEXT("/Game/Input/IMC_Default"));
-	if (MappingContextFinder.Succeeded())
+	if (DefaultMappingContextFinder.Succeeded())
 	{
-		DefaultMappingContext = MappingContextFinder.Object;
+		DefaultMappingContext = DefaultMappingContextFinder.Object;
+		UE_LOG(LogTemp, Warning, TEXT("Found Mapping Context!"));
+	}
+
+	static ConstructorHelpers::FObjectFinder<UInputMappingContext> MenuMappingContextFinder(
+	TEXT("/Game/Input/IMC_Escape"));
+	if (MenuMappingContextFinder.Succeeded())
+	{
+		MenuMappingContext = MenuMappingContextFinder.Object;
 		UE_LOG(LogTemp, Warning, TEXT("Found Mapping Context!"));
 	}
 
@@ -40,60 +52,47 @@ AClientPlayerController::AClientPlayerController()
 		EscapeMenuWidget = EscapeMenuWidgetFinder.Class;
 		UE_LOG(LogTemp, Warning, TEXT("Found Escape Menu Widget!"));
 	}
-}
 
-// void AClientPlayerController::CallRequestServerList()
-// {
-// 	UGameInstance* GameInstance = GetGameInstance();
-// 	if (GameInstance)
-// 	{
-// 		UClientNetworkSubsystem* ClientNetworkSubsystem = GameInstance->GetSubsystem<UClientNetworkSubsystem>();
-// 		if (ClientNetworkSubsystem)
-// 		{
-// 			ClientNetworkSubsystem->RequestServerList();
-// 		}
-// 		else
-// 		{
-// 			UE_LOG(LogTemp, Warning, TEXT("ClientNetworkSubsystem is null"));
-// 		}
-// 	}
-// 	else
-// 	{
-// 		UE_LOG(LogTemp, Warning, TEXT("GameInstance is null"));
-// 	}
-// }
+	static ConstructorHelpers::FClassFinder<UUserWidget> LoadingScreenWidgetFinder(
+	TEXT("/Game/Blueprints/UI/LoadingScreen"));
+	if (LoadingScreenWidgetFinder.Succeeded())
+	{
+		LoadingScreenWidget = LoadingScreenWidgetFinder.Class;
+		UE_LOG(LogTemp, Warning, TEXT("Found Loading Screen Widget!"));
+	}
+	
+	bReplicates = true;
+}
 
 void AClientPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Ensure the Enhanced Input Local Player Subsystem is initialized
-	if (ULocalPlayer* LocalPlayer = GetLocalPlayer())
+	// Only attempt to set up input on clients, not dedicated servers
+	if (!HasAuthority()) // This checks if this is a client
 	{
-        if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(LocalPlayer)) {
-			// Add the default mapping context
-			Subsystem->AddMappingContext(DefaultMappingContext, 0);
-        	UE_LOG(LogTemp, Log, TEXT("Default mapping context added."));
+		if (ULocalPlayer* LocalPlayer = GetLocalPlayer())
+		{
+			if (UEnhancedInputLocalPlayerSubsystem* Subsystem = LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
+			{
+				// Add the default mapping context
+				Subsystem->AddMappingContext(DefaultMappingContext, 0);
+				UE_LOG(LogTemp, Log, TEXT("Default mapping context added."));
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Failed to get EnhancedInputLocalPlayerSubsystem."));
+			}
 		}
-        else
-        {
-        	UE_LOG(LogTemp, Warning, TEXT("Failed to get EnhancedInputLocalPlayerSubsystem."));
-        }
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("PlayerController not found."));
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Unable to get LocalPlayer - check network setup."));
+		}
 	}
 }
 
 void AClientPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	// Close the connection to the server if it's still open
-	if (ServerConnection != k_HSteamNetConnection_Invalid)
-	{
-		SteamNetworkingSockets()->CloseConnection(ServerConnection, 0, "Client Disconnecting", true);
-	}
-
 	Super::EndPlay(EndPlayReason);
 }
 
@@ -119,16 +118,28 @@ void AClientPlayerController::ConnectToServer(const FString& ServerSteamID)
 		return;
 	}
 
+	if (LoadingScreenWidget)
+	{
+		if (!LoadingScreen)
+		{
+			LoadingScreen = CreateWidget<UUserWidget>(this, LoadingScreenWidget);
+		}
+
+		if (LoadingScreen)
+		{
+			LoadingScreen->AddToViewport();
+		}
+	}
 	// Construct the Steam connection URL using the Steam ID
 	FString TravelURL = FString::Printf(TEXT("steam.%s"), *ServerSteamID);
 
 	// Log the connection attempt
-	UE_LOG(LogTemp, Log, TEXT("Attempting to connect to Steam server with SteamID: %s"), *ServerSteamID);
+	//UE_LOG(LogTemp, Log, TEXT("Attempting to connect to Steam server with SteamID: %s"), *ServerSteamID);
 
 	// Use ClientTravel to connect to the server
 	ClientTravel(TravelURL, ETravelType::TRAVEL_Absolute);
 	
-	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Green, FString::Printf(TEXT("Connecting to server at %s:%d"), *ServerSteamID));
+	//GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Green, FString::Printf(TEXT("Connecting to server at %s:%d"), *ServerSteamID));
 }
 
 void AClientPlayerController::SetupInputComponent()
@@ -185,9 +196,6 @@ void AClientPlayerController::Tick(float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 
 	SetShowMouseCursor(true);
-	
-	// Handles Steam callbacks on the client
-	SteamAPI_RunCallbacks();
 }
 
 void AClientPlayerController::OnShowEscapeMenu(const FInputActionValue& Value)
@@ -205,21 +213,46 @@ void AClientPlayerController::OnShowEscapeMenu(const FInputActionValue& Value)
 			{
 				EscapeMenu->RemoveFromParent();
 				EscapeMenu = nullptr;
-				//SetShowMouseCursor(false);
+
+				// Re-enable all input mappings
+				if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer()))
+				{
+					Subsystem->AddMappingContext(DefaultMappingContext, 0);
+				}
+
 				SetInputMode(FInputModeGameOnly());
 			}
 			else
 			{
 				EscapeMenu->AddToViewport();
 				UE_LOG(LogTemp, Log, TEXT("Escape Menu Widget displayed."));
-				//SetShowMouseCursor(true);
-				SetInputMode(FInputModeGameAndUI());
+
+				// Disable movement-related input mappings
+				if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer()))
+				{
+					// Remove all mapping contexts except the one for menu/escape
+					Subsystem->RemoveMappingContext(DefaultMappingContext);
+                 
+					// If you have a specific menu mapping context, add it here
+					if (MenuMappingContext)
+					{
+						Subsystem->AddMappingContext(MenuMappingContext, 0);
+					}
+				}
+
+				// Custom input mode that keeps escape functional
+				FInputModeGameAndUI InputMode;
+				InputMode.SetWidgetToFocus(EscapeMenu->TakeWidget());
+				InputMode.SetHideCursorDuringCapture(false);
+				InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+
+				SetInputMode(InputMode);
 			}
 		}
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Escape Menu Widget is null."));
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Escape Menu Widget is null."));
+		}
 	}
 }
 
@@ -227,14 +260,14 @@ void AClientPlayerController::LeftMouseClick(const FInputActionValue& Value)
 {
 	//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("Left Mouse Click Event"));
 
-	SpawnActors();
+	//SpawnActors();
 }
 
 void AClientPlayerController::RightMouseClick(const FInputActionValue& Value)
 {
 	//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("Left Mouse Click Event"));
 
-	MoveHordeLocation();
+	//MoveHordeLocation();
 }
 
 void AClientPlayerController::SpawnActors()
@@ -305,7 +338,7 @@ void AClientPlayerController::SpawnActors()
 			}
 
 			// Just a useful visual that is needed for now
-			//DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 1.0f, 0, 1.0f);
+			DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 1.0f, 0, 1.0f);
 		}
 	}
 }
@@ -316,33 +349,75 @@ void AClientPlayerController::MoveHordeLocation()
 
 	if (DeprojectMousePositionToWorld(WorldLocation, WorldDirection))
 	{
-		// Perform a line trace from the mouse cursor position
 		FVector Start = WorldLocation;
 		FVector End = Start + (WorldDirection * 10000.0f);
 
 		FHitResult HitResult;
-		FCollisionQueryParams CollisionParams;
-
-		bool bHit = GetWorld()->LineTraceSingleByChannel(
-			HitResult,
-			Start,
-			End,
-			ECC_Visibility,
-			CollisionParams
-		);
-
-		if (bHit)
+		if (GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_Visibility))
 		{
-			TArray<AActor*> FoundActors;
-			UGameplayStatics::GetAllActorsOfClass(GetWorld(), AFlecsZombieHorde::StaticClass(), FoundActors);
+			Server_MoveHordeLocation(HitResult.Location);
 
-			for (AActor* Actor : FoundActors)
+			DrawDebugLine(GetWorld(), Start, End, FColor::Blue, false, 1.0f, 0, 1.0f);
+		}
+	}
+}
+
+void AClientPlayerController::Server_MoveHordeLocation_Implementation(const FVector& TargetLocation)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Server_MoveHordeLocation called with TargetLocation: %s"), *TargetLocation.ToString());
+
+	TArray<AActor*> FoundActors;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AFlecsZombieHorde::StaticClass(), FoundActors);
+
+	UE_LOG(LogTemp, Warning, TEXT("Found %d Horde actors"), FoundActors.Num());
+	
+	for (AActor* Actor : FoundActors)
+	{
+		AFlecsZombieHorde* Horde = Cast<AFlecsZombieHorde>(Actor);
+		if (Horde)
+		{
+			if (Horde->HasAuthority())
 			{
-				AFlecsZombieHorde* Horde = Cast<AFlecsZombieHorde>(Actor);
-				AFlecsAIController* AController = Cast<AFlecsAIController>(Horde->GetController());
-				AController->MoveToTargetLocation(HitResult.Location);
+				UE_LOG(LogTemp, Warning, TEXT("Calling MoveToLocation on Horde: %s"), *Horde->GetName());
+				Horde->MoveToLocation(TargetLocation);
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Horde %s does not have authority!"), *Horde->GetName());
 			}
 		}
-		DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 1.0f, 0, 1.0f);
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Didn't find a Horde."));
+		}
 	}
+}
+
+bool AClientPlayerController::Server_MoveHordeLocation_Validate(const FVector& TargetLocation)
+{
+	// Optional: Add validation checks, e.g., range or ownership checks
+	return true;
+}
+
+void AClientPlayerController::ServerRequestSpawnHorde_Implementation(FVector HordeSpawnLocation, float Radius, int32 NumEntities)
+{
+	// Ensure this runs on the server
+	if (HasAuthority())
+	{
+		UFlecsSubsystem* FlecsSubsystem = GetGameInstance()->GetSubsystem<UFlecsSubsystem>();
+		if (FlecsSubsystem)
+		{
+			FlecsSubsystem->SpawnZombieHorde(HordeSpawnLocation, Radius, NumEntities);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("FlecsSubsystem not found on server!"));
+		}
+	}
+}
+
+bool AClientPlayerController::ServerRequestSpawnHorde_Validate(FVector HordeSpawnLocation, float Radius, int32 NumEntities)
+{
+	// Validate the request parameters (optional)
+	return Radius > 0 && NumEntities > 0;
 }

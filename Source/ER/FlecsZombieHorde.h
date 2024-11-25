@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
 #include "FlecsAIController.h"
+#include "FlowFieldMovement.h"
 #include "flecs.h"
 #include "FlecsZombieBoid.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -19,37 +20,62 @@ class ER_API AFlecsZombieHorde : public APawn
 public:
 	AFlecsZombieHorde(const class FObjectInitializer& ObjectInitializer);
 	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UInstancedStaticMeshComponent* InstancedMeshComponent;
 
-	UFUNCTION(BlueprintCallable, BlueprintPure = false, Category = "AI")
-	const TArray<AFlecsZombieStimulus*>& GetGlobalStimulus() const { return GlobalStimuli; }
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	
+	UFUNCTION()
+	void UpdateAndReplicateTransforms();
 
+	UInstancedStaticMeshComponent* GetInstancedMeshComponent() { return InstancedMeshComponent; }
+
+	UPROPERTY()
+	UFloatingPawnMovement* MovementComponent;
+
+	UPROPERTY()
+	UFlowFieldMovement* FlowFieldMovement;
+	
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-	UFloatingPawnMovement* MovementComponent;
 
-	// All the agents are now boids inside this Agents Manager
-	UPROPERTY(Category = AI, EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
-	TMap<int32, UFlecsZombieBoid*> Boids;
+	UPROPERTY(ReplicatedUsing = OnRep_InstanceTransforms)
+	TArray<FTransform> InstanceTransforms;
 
-	UPROPERTY(Category = AI, EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
-	TArray<AFlecsZombieStimulus*> GlobalStimuli;
-	
-	//protect the use of the boids
-	FCriticalSection MutexBoid;
 	
 public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
 	// // Called to bind functionality to input
+	UFUNCTION()
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
-	//
-	 void SpawnBoid(const FVector& Location, const FRotator& Rotation);
-	// void UpdateBoidNeighbourhood(UFlecsZombieBoid* Boid);
-	// void RemoveGlobalStimulus(AFlecsZombieStimulus* Stimulus);
-	// void UpdateBoids(float DeltaTime);
+
+	UFUNCTION()
+	void SpawnBoid(const FVector& Location, const FRotator& Rotation);
+
 	flecs::world* GetEcsWorld() const;
+
+	UFUNCTION()
+	void MoveToLocation(const FVector& TargetLocation);
+	
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastSpawnBoid(const FVector& Location, const FRotator& Rotation);
+	
+	UFUNCTION()
+	void OnRep_InstanceTransforms();
+
+	UFUNCTION()
+	void UpdateInstanceTransforms();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void NetMulticast_UpdateTransforms(const TArray<FTransform>& NewTransforms);
+	
+private:
+	struct FTransformUpdate
+	{
+		int32 Index;
+		FTransform Transform;
+	};
 };

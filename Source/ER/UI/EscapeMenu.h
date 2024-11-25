@@ -6,6 +6,8 @@
 #include "ServerBrowser.h"
 #include "Blueprint/UserWidget.h"
 #include "Components/Button.h"
+#include "Components/Image.h"
+#include "ImageUtils.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "EscapeMenu.generated.h"
@@ -22,6 +24,15 @@ public:
 	UPROPERTY(meta = (BindWidget))
 	UButton* ExitGameButton;
 
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* AccountNameText;
+
+	UPROPERTY(meta = (BindWidget))
+	UImage* AvatarImage;
+
+	UPROPERTY(meta = (BindWidget))
+	UButton* SteamProfileButton;
+	
 	UEscapeMenu(const FObjectInitializer& ObjectInitializer);
 	
 	void NativeConstruct() override;
@@ -39,4 +50,10 @@ private:
 
 	UPROPERTY()
 	UServerBrowser* ServerBrowser;
+	
+	void UpdateSteamInfo();
+	void GetSteamAvatar();
+
+	UFUNCTION()
+	void OnSteamProfileButtonClicked();
 };

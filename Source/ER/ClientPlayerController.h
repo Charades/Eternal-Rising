@@ -22,11 +22,15 @@ class ER_API AClientPlayerController : public APlayerController
 
 public:
 	AClientPlayerController();
-	
-	void CallRequestServerList();
 
 	UFUNCTION(Exec)
 	void ConnectToServer(const FString& ServerSteamID);
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerRequestSpawnHorde(FVector HordeSpawnLocation, float Radius, int32 NumEntities);
+	
+	UInputMappingContext* GetDefaultMappingContext() const { return DefaultMappingContext; }
+	UInputData* GetInputData() const { return InputData; }
 
 protected:
 	virtual void BeginPlay() override;
@@ -41,6 +45,11 @@ protected:
 	void SpawnActors();
 	void MoveHordeLocation();
 
+	// Example for moving the AI horde
+	UFUNCTION(Server, unreliable, WithValidation)
+	void Server_MoveHordeLocation(const FVector& TargetLocation);
+
+
 private:
 	HSteamNetConnection ServerConnection;
 	
@@ -48,11 +57,20 @@ private:
 	UInputMappingContext* DefaultMappingContext;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
+	class UInputMappingContext* MenuMappingContext;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
 	UInputData* InputData;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<UEscapeMenu> EscapeMenuWidget;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI", meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<UUserWidget> LoadingScreenWidget;
+	
 	UPROPERTY()
 	UEscapeMenu* EscapeMenu;
+
+	UPROPERTY()
+	UUserWidget* LoadingScreen;
 };
