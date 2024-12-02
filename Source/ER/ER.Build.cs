@@ -8,9 +8,9 @@ public class ER : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "UMG", "AIModule", "NavigationSystem", "FlowFieldPathfinding" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "UMG", "AIModule", "NavigationSystem", "FlowFieldPathfinding", "MoviePlayer" });
 
-		PrivateDependencyModuleNames.AddRange(new string[] { "FlecsLibrary", "SteamLibrary", "Slate", "SlateCore", "OnlineSubsystem", "OnlineSubsystemUtils", "OnlineSubsystemSteam", "Steamworks", "AnimToTexture", "Networking" });
+		PrivateDependencyModuleNames.AddRange(new string[] { "FlecsLibrary", "SteamLibrary", "Slate", "SlateCore", "OnlineSubsystem", "OnlineSubsystemUtils", "OnlineSubsystemSteam", "Steamworks", "AnimToTexture", "Networking", "AnimToTextureEditor" });
 		
 		AddEngineThirdPartyPrivateStaticDependencies(Target, "Steamworks");
 	}

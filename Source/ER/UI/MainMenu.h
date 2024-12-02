@@ -44,6 +44,15 @@ public:
 
 	UPROPERTY(meta = (BindWidget))
 	UImage* AvatarImage;
+
+	UPROPERTY(meta = (BindWidget))
+	UImage* AudioImage;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Images")
+	UTexture2D* MutedAudioImage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Images")
+	UTexture2D* UnmutedAudioImage;
 	
 	UMainMenu(const FObjectInitializer& ObjectInitializer);
 	
@@ -62,7 +71,6 @@ public:
 
 	UFUNCTION()
 	void OnSteamProfileButtonClicked();
-
 
 protected:
 	void NativeConstruct() override;
@@ -83,7 +91,7 @@ private:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<UUserWidget> SettingsMenuWidget;
-
+	
 	UPROPERTY()
 	UServerBrowser* ServerBrowser;
 
@@ -92,4 +100,6 @@ private:
 
 	UPROPERTY()
 	UAudioComponent* AudioComponent;
+
+	bool PlayingMusic = true;
 };

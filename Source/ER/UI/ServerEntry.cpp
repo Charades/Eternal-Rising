@@ -32,6 +32,11 @@ void UServerEntry::NativeOnListItemObjectSet(UObject* ListItemObject)
 	// Determine the index of this item in the ListView
 	const int32 Index = OwningListView->GetIndexForItem(ListItemObject);
 
+	if(IsListItemSelected())
+	{
+		SetBorderColor(FLinearColor(0.670588f, 0.313726f, 0.0f, 1.0f)); // Example hover color
+	}
+
 	// Apply alternating row colors based on the index (even/odd)
 	UBorder* BackgroundBorder = Cast<UBorder>(GetWidgetFromName(TEXT("EntryBorder")));
 	if (BackgroundBorder)

@@ -3,6 +3,7 @@
 
 #include "EscapeMenu.h"
 #include "Components/Button.h"
+#include "ER/ClientGameInstance.h"
 
 UEscapeMenu::UEscapeMenu(const FObjectInitializer& ObjectInitializer): Super(ObjectInitializer)
 {
@@ -18,7 +19,7 @@ UEscapeMenu::UEscapeMenu(const FObjectInitializer& ObjectInitializer): Super(Obj
 void UEscapeMenu::NativeConstruct()
 {
 	Super::NativeConstruct();
-
+	UpdateSteamInfo();
 	ServerBrowserButton = Cast<UButton>(GetWidgetFromName(TEXT("ServerBrowserButton")));
 	ExitGameButton = Cast<UButton>(GetWidgetFromName(TEXT("ExitGameButton")));
 	
@@ -30,6 +31,11 @@ void UEscapeMenu::NativeConstruct()
 	if (ExitGameButton)
 	{
 		ExitGameButton->OnClicked.AddDynamic(this, &UEscapeMenu::OnExitGameButtonClicked);
+	}
+
+	if (SteamProfileButton)
+	{
+		SteamProfileButton->OnClicked.AddDynamic(this, &UEscapeMenu::OnSteamProfileButtonClicked);
 	}
 }
 
@@ -82,13 +88,97 @@ void UEscapeMenu::OnServerBrowserButtonClicked()
 
 void UEscapeMenu::OnExitGameButtonClicked()
 {
-	UWorld* World = GetWorld();
-	APlayerController* PlayerController = World ? World->GetFirstPlayerController() : nullptr;
+	// UWorld* World = GetWorld();
+	// APlayerController* PlayerController = World ? World->GetFirstPlayerController() : nullptr;
+	//
+	// if (PlayerController)
+	// {
+	// 	UKismetSystemLibrary::QuitGame(World, PlayerController, EQuitPreference::Quit, true);
+	// }
 
-	if (PlayerController)
+	UClientGameInstance* GameInstance = Cast<UClientGameInstance>(GetGameInstance());
+	if (GameInstance)
 	{
-		UKismetSystemLibrary::QuitGame(World, PlayerController, EQuitPreference::Quit, true);
+		GameInstance->ReturnToMainMenu();
 	}
 }
 
+void UEscapeMenu::UpdateSteamInfo()
+{
+	if (!SteamAPI_Init()) return;
+
+	// Get the Steam user ID (local player)
+	CSteamID SteamID = SteamUser()->GetSteamID();
+
+	// Get the Steam account name
+	FString AccountName = UTF8_TO_TCHAR(SteamFriends()->GetPersonaName());
+	if (AccountNameText)
+	{
+		AccountNameText->SetText(FText::FromString(AccountName));
+	}
+	
+	GetSteamAvatar();
+}
+
+void UEscapeMenu::GetSteamAvatar()
+{
+	// Get Steam avatar handle
+	int32 AvatarHandle = SteamFriends()->GetMediumFriendAvatar(SteamUser()->GetSteamID());
+    
+	if (AvatarHandle > 0)
+	{
+		uint32 Width, Height;
+		SteamUtils()->GetImageSize(AvatarHandle, &Width, &Height);
+        
+		if (Width > 0 && Height > 0)
+		{
+			// Create buffer for the avatar data
+			TArray<uint8> AvatarRGBA;
+			AvatarRGBA.SetNum(Width * Height * 4);
+            
+			// Get the avatar RGBA data
+			if (SteamUtils()->GetImageRGBA(AvatarHandle, AvatarRGBA.GetData(), AvatarRGBA.Num()))
+			{
+				// Create a texture from the RGBA data
+				UTexture2D* AvatarTexture = UTexture2D::CreateTransient(Width, Height, PF_R8G8B8A8);
+                
+				if (AvatarTexture)
+				{
+					// Lock the texture for writing
+					void* TextureData = AvatarTexture->GetPlatformData()->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
+					FMemory::Memcpy(TextureData, AvatarRGBA.GetData(), AvatarRGBA.Num());
+					AvatarTexture->GetPlatformData()->Mips[0].BulkData.Unlock();
+                    
+					// Update the texture
+					AvatarTexture->UpdateResource();
+                    
+					// Set the texture to your image widget
+					if (AvatarImage)
+					{
+						AvatarImage->SetBrushFromTexture(AvatarTexture);
+					}
+				}
+			}
+		}
+	}
+}
+
+void UEscapeMenu::OnSteamProfileButtonClicked()
+{
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("Steam profile button clicked!"));
+	}
+
+	if (SteamAPI_Init())
+	{
+		// Open the Steam Overlay to the "Friends" section
+		SteamFriends()->ActivateGameOverlay("Friends");
+		UE_LOG(LogTemp, Log, TEXT("Steam Overlay opened successfully."));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Steam API not initialized. Unable to open Steam Overlay."));
+	}
+}
 

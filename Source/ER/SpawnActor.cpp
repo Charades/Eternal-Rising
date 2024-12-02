@@ -2,6 +2,8 @@
 
 
 #include "SpawnActor.h"
+
+#include "ClientPlayerController.h"
 #include "FlecsSubsystem.h"
 
 // Sets default values
@@ -68,21 +70,12 @@ void ASpawnActor::SpawnPoints(float Radius, int32 NumberOfPoints)
 
 	// Get the location of this actor
 	FVector ActorLocation = GetActorLocation();
-	//ActorLocation.X = ActorLocation.X + 600.0f;
 	ActorLocation.Z = 0;
 
-	UFlecsSubsystem* MySubsystem = GetGameInstance()->GetSubsystem<UFlecsSubsystem>();
-
-	if (MySubsystem)
+	AClientPlayerController* PlayerController = Cast<AClientPlayerController>(GetWorld()->GetFirstPlayerController());
+	if (PlayerController)
 	{
-		MySubsystem->SpawnZombieHorde(ActorLocation, Radius, NumberOfPoints);
-	}
-	else
-	{
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, TEXT("Subsystem not found!"));
-		}
+		PlayerController->ServerRequestSpawnHorde(ActorLocation, Radius, NumberOfPoints);
 	}
 }
 

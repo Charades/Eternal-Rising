@@ -7,11 +7,12 @@
 #include "ClientNetworkSubsystem.h"
 #include "ER/ClientPlayerController.h"
 #include "Networking.h"
+#include "ER/ClientGameInstance.h"
 
 void UServerBrowser::NativeConstruct()
 {
 	Super::NativeConstruct();
-
+	
 	ServerList = Cast<UServerList>(GetWidgetFromName(TEXT("ServerList")));
 	ConnectButton = Cast<UButton>(GetWidgetFromName(TEXT("ConnectButton")));
 	RefreshButton = Cast<UButton>(GetWidgetFromName(TEXT("RefreshButton")));
@@ -134,17 +135,26 @@ void UServerBrowser::OnConnectButtonClicked()
 {
 	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("Connect Button Clicked"));
 	
+	if (!SelectedServer)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("No server selected."));
+		return;
+	}
+
 	if (SelectedServer->GetSteamID().IsEmpty())
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("No server selected."));
 		return;
 	}
 
+	this->SetVisibility(ESlateVisibility::Collapsed);
+	
 	// Get the PlayerController and cast it to AMyPlayerController
 	AClientPlayerController* MyPC = Cast<AClientPlayerController>(GetWorld()->GetFirstPlayerController());
 	if (MyPC)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("PC ConnectToServer called."));
+		
 		MyPC->ConnectToServer(SelectedServer->GetSteamID());
 	}
 	else
@@ -176,8 +186,6 @@ void UServerBrowser::UpdateServerList()
 {
 	AsyncTask(ENamedThreads::GameThread, [this]()
 	{
-		ServerList->ClearSelections();
-		
 		UGameInstance* GameInstance = GetGameInstance();
 		if (GameInstance)
 		{
@@ -234,6 +242,8 @@ void UServerBrowser::RefreshServerList()
 	{
 		UE_LOG(LogTemp, Warning, TEXT("GameInstance is null"));
 	}
+	
+	ServerList->ClearSelections();
 }
 
 void UServerBrowser::OnServerTextChanged(const FText& Text)

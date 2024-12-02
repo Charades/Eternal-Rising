@@ -1,285 +1,161 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "FlecsZombieBoid.h"
-#include "FlecsZombieHorde.h"
-#include "FlecsZombieStimulus.h"
-#include "Kismet/KismetMathLibrary.h"
-#include "Kismet/KismetSystemLibrary.h"
+
+#include "AIController.h"
+#include "AnimToTextureInstancePlaybackHelpers.h"
+#include "ZombieMeshStruct.h"
+#include "Net/UnrealNetwork.h"
 #include "Engine/EngineTypes.h"
 #include "GameFramework/Actor.h"
 
+AFlecsZombieBoid::AFlecsZombieBoid(const class FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
+{
+	bReplicates = true;
+	bAutoPlay = true;
+	
+	InstancedStaticMeshComponent = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("InstancedStaticMesh"));
+	RootComponent = InstancedStaticMeshComponent;
+	
+	InstancedStaticMeshComponent->SetRenderCustomDepth(true);
 
-// UFlecsZombieBoid::UFlecsZombieBoid()
-// 	: AlignmentWeight(1.0f)
-// 	  , CohesionWeight(1.0f)
-// 	  , CohesionLerp(100.0f)
-// 	  , CollisionWeight(1.0f)
-// 	  , SeparationLerp(5.0f)
-// 	  , SeparationForce(100.0f)
-// 	  , SeparationWeight(0.8f)
-// 	  , BaseMovementSpeed(150.0f)
-// 	  , MaxMovementSpeed(250.0f)
-// 	  , VisionRadius(400.0f)
-// 	  , CollisionAvoidanceWeight(0),
-// 		CollisionDistance(400.0f)
-// 	  , MaxRotationSpeed(6.0f)
-// 	  , MeshIndex(0)
-// 	  , BoidTransform(FTransform::Identity)
-// 	  , AlignmentVector(0.0)
-// 	  , CohesionVector(0.0)
-// 	  , SeparationVector(0.0)
-// 	  , NegativeStimuliVector(0.0)
-// 	  , PositiveStimuliVector(0.0)
-// 	  , CollisionAvoidanceVector(0.0)
-// 	  , PhysicalRadius(45.0f)
-// {
-// 	PhysicalRadius2 = 2 * PhysicalRadius;
-// }
-//
-// void UFlecsZombieBoid::ResetComponents()
-// {
-// 	AlignmentVector = FVector::ZeroVector;
-// 	CohesionVector = FVector::ZeroVector;
-// 	SeparationVector = FVector::ZeroVector;
-// 	NegativeStimuliVector = FVector::ZeroVector;
-// 	PositiveStimuliVector = FVector::ZeroVector;
-// 	CollisionAvoidanceVector = FVector::ZeroVector;
-// 	StimulusSet.Empty(StimulusSet.Num());
-// }
-//
-// void UFlecsZombieBoid::Init(const FVector& Location, const FRotator& Rotation, int32 MeshInstanceIndex)
-// {
-// 	FRotator AdjustedRotation = Rotation;
-// 	AdjustedRotation.Yaw += -90.0f; // Apply -90 degree yaw adjustment
-//
-// 	BoidTransform.SetRotation(AdjustedRotation.Quaternion());
-// 	BoidTransform.SetLocation(Location);
-// 	MeshIndex = MeshInstanceIndex;
-// 	TargetMoveVector = AdjustedRotation.Vector().GetSafeNormal();
-// }
-//
-// void UFlecsZombieBoid::Update(float DeltaSeconds, AFlecsZombieHorde* Horde)
-// {
-// 	CurrentMoveVector = TargetMoveVector;
-// 	ComputeMovementVector(Horde);
-//
-// 	const FVector NewDirection = (TargetMoveVector * BaseMovementSpeed * DeltaSeconds).GetClampedToMaxSize(MaxMovementSpeed * DeltaSeconds);
-// 	BoidTransform.SetLocation(BoidTransform.GetLocation() + NewDirection);
-//
-// 	// Only update rotation if the angle change is significant to avoid spinning
-// 	const float AngleThreshold = 5.0f; // Set to a small angle threshold in degrees
-// 	FRotator CurrentRotation = BoidTransform.Rotator();
-// 	FRotator DesiredRotation = UKismetMathLibrary::MakeRotFromXZ(NewDirection, FVector::UpVector);
-// 	DesiredRotation.Yaw += -90.0f;  // Apply the -90 degree yaw offset
-//
-// 	// Check if the desired rotation differs from the current by more than the threshold
-// 	if (FMath::Abs(CurrentRotation.Yaw - DesiredRotation.Yaw) > AngleThreshold)
-// 	{
-// 		FQuat CurrentQuat = CurrentRotation.Quaternion();
-// 		FQuat DesiredQuat = DesiredRotation.Quaternion();
-//
-// 		// Smooth rotation interpolation
-// 		FQuat NewRotation = FQuat::Slerp(CurrentQuat, DesiredQuat, DeltaSeconds * (MaxRotationSpeed * 0.5f));
-// 		BoidTransform.SetRotation(NewRotation);
-// 	}
-//
-// 	PerformGroundTrace(Horde, MaxFloorDistance, ECC_WorldStatic, FloorHeightOffset);
-// }
-//
-// void UFlecsZombieBoid::ComputeMovementVector(AFlecsZombieHorde* Horde)
-// {
-// 	ResetComponents();
-// 	ComputeAlignmentVector();
-//
-// 	if (Neighbors.Num() > 0)
-// 	{
-// 		ComputeCohesionVector();
-// 		ComputeSeparationVector();
-// 	}
-//
-// 	ComputeAllStimuliVectors(Horde);
-//
-// 	if (CollisionAvoidanceWeight != 0.0f)
-// 	{
-// 		ComputeCollisionAvoidanceVector(Horde);
-// 	}
-//
-// 	VectorAggregation();
-// }
-//
-// void UFlecsZombieBoid::RemoveGlobalStimulus(AFlecsZombieStimulus* Stimulus)
-// {
-// 	GlobalStimulus.Remove(Stimulus);
-// }
-//
-// void UFlecsZombieBoid::ComputeAlignmentVector()
-// {
-// 	for (const UFlecsZombieBoid* Boid : Neighbors)
-// 	{
-// 		AlignmentVector += Boid->CurrentMoveVector.GetSafeNormal(NormalizeVectorTolerance);
-// 	}
-//
-// 	AlignmentVector = (CurrentMoveVector + AlignmentVector).GetSafeNormal(NormalizeVectorTolerance) * AlignmentWeight;
-// }
-//
-// void UFlecsZombieBoid::ComputeCohesionVector()
-// {
-// 	const FVector& Location = BoidTransform.GetLocation();
-// 	for (const UFlecsZombieBoid* Boid : Neighbors)
-// 	{
-// 		CohesionVector += Boid->BoidTransform.GetLocation() - Location;
-// 	}
-//
-// 	CohesionVector = (CohesionVector / Neighbors.Num() / CohesionLerp) * CohesionWeight;
-// }
-//
-// void UFlecsZombieBoid::ComputeSeparationVector()
-// {
-// 	const FVector& Location = BoidTransform.GetLocation();
-//
-// 	for (const UFlecsZombieBoid* Boid : Neighbors)
-// 	{
-// 		FVector Separation = Location - Boid->BoidTransform.GetLocation();
-// 		SeparationVector += Separation.GetSafeNormal(NormalizeVectorTolerance) / FMath::Abs(Separation.Size() - PhysicalRadius);
-// 	}
-//
-// 	const FVector SeparationForceComponent = SeparationVector * SeparationForce;
-// 	SeparationVector += (SeparationForceComponent + SeparationForceComponent * (SeparationLerp / Neighbors.Num())) * SeparationWeight;
-// }
-//
-// void UFlecsZombieBoid::ComputeCollisionAvoidanceVector(AFlecsZombieHorde* Horde)
-// {
-// 	FHitResult OutHit;
-// 	const FVector& Location = BoidTransform.GetLocation();
-// 	static const FName LineTrace(TEXT("LineTrace"));
-// 	const FVector End = Location + BoidTransform.GetRotation().GetForwardVector() * CollisionDistance;
-// 	FCollisionQueryParams Params(LineTrace, false);
-// 	Params.AddIgnoredActor(Horde);
-// 	const static FCollisionShape SphereShape = FCollisionShape::MakeSphere(PhysicalRadius);
-// 	
-// 	if (GetWorld()->SweepSingleByChannel(OutHit, Location, End, FQuat::Identity, ECC_WorldStatic, SphereShape, Params))
-// 	{
-// 		const FVector Direction = OutHit.ImpactPoint - BoidTransform.GetLocation();
-// 		CollisionAvoidanceVector -= (Direction.GetSafeNormal(NormalizeVectorTolerance) / FMath::Abs(Direction.Size() - PhysicalRadius)).RotateAngleAxis(CollisionDeviationAngle, FVector::UpVector) * CollisionWeight;
-// 	}
-// }
-//
-// bool UFlecsZombieBoid::CheckStimulusVision()
-// {
-// 	static TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes{{UEngineTypes::ConvertToObjectType(ECC_Destructible)}};
-// 	return UKismetSystemLibrary::SphereOverlapActors(
-// 		this, BoidTransform.GetLocation(),
-// 		VisionRadius,
-// 		ObjectTypes,
-// 		AFlecsZombieStimulus::StaticClass(),
-// 		TArray<AActor*>(),
-// 		StimulusInVision);
-// }
-//
-// void UFlecsZombieBoid::ComputeAllStimuliVectors(AFlecsZombieHorde* Horde)
-// {
-// 	CheckStimulusVision();
-//
-// 	const FVector& Location = BoidTransform.GetLocation();
-// 	for (AActor* Stimulus : StimulusInVision)
-// 	{
-// 		ComputeStimuliComponentVector(Horde, Cast<AFlecsZombieStimulus>(Stimulus), Location);
-// 	}
-// 	
-// 	for (AFlecsZombieStimulus* Stimulus : Horde->GetGlobalStimulus())
-// 	{
-// 		ComputeStimuliComponentVector(Horde, Stimulus, Location, true);
-// 	}
-// 	
-//
-// 	for (AFlecsZombieStimulus* Stimulus : PrivateGlobalStimulus)
-// 	{
-// 		ComputeStimuliComponentVector(Horde, Stimulus, Location, true);
-// 	}
-// 	
-// 	NegativeStimuliVector = NegativeStimuliMaxFactor * NegativeStimuliVector.GetSafeNormal(NormalizeVectorTolerance);
-// }
-//
-// void UFlecsZombieBoid::ComputeStimuliComponentVector(AFlecsZombieHorde* Agent, AFlecsZombieStimulus* Stimulus, const FVector& Location, bool bIsGlobal)
-// {
-// 	if (!IsValid(Stimulus) || ComputedStimulus.Contains(Stimulus))
-// 	{
-// 		return;
-// 	}
-//
-// 	ComputedStimulus.Add(Stimulus);
-//
-// 	if (Stimulus->Value < 0.0f)
-// 	{
-// 		CalculateNegativeStimuliVector(Stimulus, bIsGlobal);
-// 	}
-// 	else
-// 	{
-// 		if (FVector::Dist(Stimulus->GetActorLocation(), Location) <= (PhysicalRadius2 + Stimulus->Radius))
-// 		{
-// 			Stimulus->Consume(this, Agent);
-// 		}
-// 		else
-// 		{
-// 			CalculatePositiveStimuliVector(Stimulus, bIsGlobal);
-// 		}
-// 	}
-// }
-//
-// void UFlecsZombieBoid::CalculateNegativeStimuliVector(const AFlecsZombieStimulus* Stimulus, bool bIsGlobal)
-// {
-// 	check(Stimulus);
-// 	const FVector Direction = Stimulus->GetActorLocation() - BoidTransform.GetLocation();
-// 	const FVector NegativeStimuliComponentForce =
-// 		(Direction.GetSafeNormal(NormalizeVectorTolerance)
-// 			/ FMath::Abs(Direction.Size() - PhysicalRadius2))
-// 		* StimuliLerp * Stimulus->Value;
-// 	NegativeStimuliVector += NegativeStimuliComponentForce;
-// 	NegativeStimuliMaxFactor = FMath::Max(NegativeStimuliComponentForce.Size(), NegativeStimuliMaxFactor);
-// }
-//
-// void UFlecsZombieBoid::CalculatePositiveStimuliVector(const AFlecsZombieStimulus* Stimulus, bool bIsGlobal)
-// {
-// 	check(Stimulus);
-// 	const FVector Direction = Stimulus->GetActorLocation() - BoidTransform.GetLocation();
-// 	const float Svalue = bIsGlobal ? Stimulus->Value : Stimulus->Value / Direction.Size();
-// 	if (Svalue > PositiveStimuliMaxFactor)
-// 	{
-// 		PositiveStimuliMaxFactor = Svalue;
-// 		PositiveStimuliVector += Stimulus->Value * Direction.GetSafeNormal(NormalizeVectorTolerance);
-// 	}
-// }
-//
-// void UFlecsZombieBoid::VectorAggregation()
-// {
-// 	TargetMoveVector = AlignmentVector
-// 		+ CohesionVector
-// 		+ SeparationVector
-// 		+ NegativeStimuliVector
-// 		+ PositiveStimuliVector
-// 		+ CollisionAvoidanceVector;
-//
-// 	TargetMoveVector.Z = 0.0;
-// }
-//
-// void UFlecsZombieBoid::PerformGroundTrace(AFlecsZombieHorde* Horde, float TraceDistance,
-//                                           ECollisionChannel CollisionChannel, float HeightOffset)
-// {
-// 	FVector Location = BoidTransform.GetLocation();
-// 	FVector TraceEnd = Location;
-// 	FVector TraceStart = Location;
-// 	TraceStart.Z += TraceDistance;
-// 	TraceEnd.Z -= TraceDistance;
-// 	FHitResult HitResult;
-// 	static const FName LineTraceSingleName(TEXT("LineTraceSingle"));
-// 	FCollisionQueryParams TraceParams(LineTraceSingleName, false);
-// 	TraceParams.AddIgnoredActor(Horde);
-// 	const bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, CollisionChannel, TraceParams);
-// 	if (bHit && FMath::IsNearlyEqual(HitResult.ImpactNormal.Z, 1.0f, 0.1f))
-// 	{
-// 		Location = HitResult.ImpactPoint;
-// 		Location.Z += HeightOffset;
-// 		
-// 		BoidTransform.SetLocation(Location);
-// 	}
-// }
+	InstancedStaticMeshComponent->SetCollisionObjectType(ECollisionChannel::ECC_Pawn);
+	
+	FloatingPawnMovement = CreateDefaultSubobject<UFloatingPawnMovement>(TEXT("FloatingPawnMovement"));
+	
+	if (FloatingPawnMovement)
+	{
+		FloatingPawnMovement->SetIsReplicated(true);
+		FloatingPawnMovement->MaxSpeed = 245.0f;
+		FloatingPawnMovement->Acceleration = 100.0f;
+		FloatingPawnMovement->Deceleration = 100.0f;
+		FloatingPawnMovement->TurningBoost = 2.4f;
+	}
+	
+	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
+	
+	FlowFieldMovement = CreateDefaultSubobject<UFlowFieldMovement>(TEXT("FlowFieldMovement"));
+	FlowFieldMovement->SetIsReplicated(true);
+
+	static ConstructorHelpers::FObjectFinder<UDataTable> DataTableObj(TEXT("/Game/Blueprints/ZombieMeshDataTable.ZombieMeshDataTable"));
+	if (DataTableObj.Succeeded())
+	{
+		DataTable = DataTableObj.Object;
+	}
+}
+
+void AFlecsZombieBoid::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (!GetController())
+	{
+		AAIController* AIController = GetWorld()->SpawnActor<AAIController>();
+		if (AIController)
+		{
+			AIController->Possess(this);
+		}
+	}
+
+	InitializeMeshInstances();
+}
+
+void AFlecsZombieBoid::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AFlecsZombieBoid, FlowFieldMovement);
+	DOREPLIFETIME(AFlecsZombieBoid, FloatingPawnMovement);
+	DOREPLIFETIME(AFlecsZombieBoid, InstancedStaticMeshComponent);
+}
+
+void AFlecsZombieBoid::BuildAutoPlayData(UAnimToTextureDataAsset* InDA, TArray<FAnimToTextureAutoPlayData>& AutoPlayDataArray)
+{
+	AutoPlayDataArray.Empty();
+
+	for (int32 i = 0; i < InstancedStaticMeshComponent->GetInstanceCount() - 1; i++)
+	{
+		FAnimToTextureAutoPlayData AutoPlayData;
+		UAnimToTextureInstancePlaybackLibrary::GetAutoPlayDataFromDataAsset(InDA, 4, AutoPlayData, 0.0f, 1.0f);
+		AutoPlayDataArray.Add(AutoPlayData);
+	}
+}
+
+void AFlecsZombieBoid::BuildMatrices(TArray<FMatrix>& Matrices)
+{
+	Matrices.Empty();
+
+	FTransform Transform;
+	
+	Matrices.Add(Transform.ToMatrixWithScale());
+}
+
+void AFlecsZombieBoid::OnConstruction(const FTransform& Transform)
+{
+	Super::OnConstruction(Transform);
+	
+	InitializeMeshInstances();
+}
+
+void AFlecsZombieBoid::SetAnimation(int index)
+{
+	FAnimToTextureAutoPlayData AutoPlayData;
+	bool bDataValid = UAnimToTextureInstancePlaybackLibrary::GetAutoPlayDataFromDataAsset(Row->DataAsset, index, AutoPlayData, 0.0f, 1.0f);
+	if (bDataValid)
+	{
+		UAnimToTextureInstancePlaybackLibrary::UpdateInstanceAutoPlayData(InstancedStaticMeshComponent, 0, AutoPlayData, true);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to get AutoPlayData from DataAsset"));
+	}
+}
+
+void AFlecsZombieBoid::PerformAttack(AActor* Actor)
+{
+	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("Attack started!"));
+	SetAnimation(4);
+}
+
+void AFlecsZombieBoid::InitializeMeshInstances()
+{
+	if (!DataTable) return;
+
+	TArray<FName> RowNames = DataTable->GetRowNames();
+	static const FString ContextString(TEXT("DataTableContext"));
+
+	if (RowNames.Num() > 0)
+	{
+		// Randomly select a row index
+		int32 RandomIndex = FMath::RandRange(0, RowNames.Num() - 1);
+
+		// Get the row name at the random index
+		FName RandomRowName = RowNames[RandomIndex];
+
+		// Fetch the row using the random row name
+		Row = DataTable->FindRow<FZombieMeshStruct>(RandomRowName, ContextString);
+		if (Row && Row->StaticMesh)
+		{
+			// Set the Static Mesh for the component
+			InstancedStaticMeshComponent->SetStaticMesh(Row->StaticMesh);
+
+			// Add an instance with a fixed transform (replace with random if needed)
+			FTransform InstanceTransform;
+			InstanceTransform.SetLocation(FVector(0.0f, 0.0f, 1.0f));
+
+			BuildMatrices(_Matrices);
+			UAnimToTextureInstancePlaybackLibrary::SetupInstancedMeshComponent(InstancedStaticMeshComponent, 1, bAutoPlay);
+			BuildAutoPlayData(Row->DataAsset, _AutoPlayDataArray);
+			UAnimToTextureInstancePlaybackLibrary::BatchUpdateInstancesAutoPlayData(InstancedStaticMeshComponent, _AutoPlayDataArray, _Matrices, true);
+			SetAnimation(1);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Random Row %s has a NULL StaticMesh"), *RandomRowName.ToString());
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("DataTable has no rows."));
+	}
+}

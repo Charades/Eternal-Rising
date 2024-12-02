@@ -6,18 +6,28 @@
 #include "Kismet/GameplayStatics.h"
 
 UMainMenu::UMainMenu(const FObjectInitializer& ObjectInitializer): Super(ObjectInitializer),
-                                                                   ServerBrowserButton(nullptr),
-                                                                   ExitGameButton(nullptr),
-                                                                   ServerBrowser(nullptr)
+																	ServerBrowserButton(nullptr),
+																	ExitGameButton(nullptr),
+																	SettingsMenuButton(nullptr),
+																	SteamProfileButton(nullptr),
+																	MusicToggleButton(nullptr),
+																	AccountNameText(nullptr),
+																	AvatarImage(nullptr),
+																	BackgroundMusic(nullptr),
+																	ServerBrowser(nullptr),
+																	SettingsMenu(nullptr),
+																	AudioComponent(nullptr)
 {
-	static ConstructorHelpers::FClassFinder<UServerBrowser> ServerBrowserWidgetFinder(TEXT("/Game/Blueprints/UI/ServerBrowser"));
+	static ConstructorHelpers::FClassFinder<UServerBrowser> ServerBrowserWidgetFinder(
+		TEXT("/Game/Blueprints/UI/ServerBrowser"));
 	if (ServerBrowserWidgetFinder.Succeeded())
 	{
 		ServerBrowserWidget = ServerBrowserWidgetFinder.Class;
 		UE_LOG(LogTemp, Log, TEXT("Found Server Browser Widget!"));
 	}
 
-	static ConstructorHelpers::FClassFinder<UUserWidget> SettingsMenuWidgetFinder(TEXT("/Game/Blueprints/UI/SettingsMenu"));
+	static ConstructorHelpers::FClassFinder<UUserWidget> SettingsMenuWidgetFinder(
+		TEXT("/Game/Blueprints/UI/SettingsMenu"));
 	if (SettingsMenuWidgetFinder.Succeeded())
 	{
 		SettingsMenuWidget = SettingsMenuWidgetFinder.Class;
@@ -242,7 +252,7 @@ void UMainMenu::OnExitGameButtonClicked()
 void UMainMenu::StartBackgroundMusic(USoundCue* MusicToPlay)
 {
 	// Stop any existing music first
-	StopBackgroundMusic();
+	//StopBackgroundMusic();
     
 	if (MusicToPlay)
 	{
@@ -259,8 +269,22 @@ void UMainMenu::StartBackgroundMusic(USoundCue* MusicToPlay)
 
 void UMainMenu::StopBackgroundMusic()
 {
-	if (AudioComponent)
+	if (AudioImage)
+	{
+		// Toggle the image
+		UTexture2D* NewTexture = PlayingMusic ? MutedAudioImage : UnmutedAudioImage;
+		AudioImage->SetBrushFromTexture(NewTexture);
+
+		// Update the toggle flag
+		PlayingMusic = !PlayingMusic;
+	}
+	
+	if (AudioComponent->IsPlaying())
 	{
 		AudioComponent->Stop();
+	}
+	else
+	{
+		AudioComponent->Play();
 	}
 }

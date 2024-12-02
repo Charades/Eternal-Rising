@@ -22,12 +22,18 @@ class ER_API AClientPlayerController : public APlayerController
 
 public:
 	AClientPlayerController();
-	
-	void CallRequestServerList();
 
 	UFUNCTION(Exec)
 	void ConnectToServer(const FString& ServerSteamID);
 
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerRequestSpawnHorde(FVector HordeSpawnLocation, float Radius, int32 NumEntities);
+	
+	UInputMappingContext* GetDefaultMappingContext() const { return DefaultMappingContext; }
+	UInputData* GetInputData() const { return InputData; }
+
+	void SpawnActors();
+	
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -38,8 +44,7 @@ protected:
 	void OnShowEscapeMenu(const FInputActionValue& Value);
 	void LeftMouseClick(const FInputActionValue& Value);
 	void RightMouseClick(const FInputActionValue& Value);
-	void SpawnActors();
-	void MoveHordeLocation();
+
 
 private:
 	HSteamNetConnection ServerConnection;
@@ -48,11 +53,20 @@ private:
 	UInputMappingContext* DefaultMappingContext;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
+	class UInputMappingContext* MenuMappingContext;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
 	UInputData* InputData;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<UEscapeMenu> EscapeMenuWidget;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI", meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<UUserWidget> LoadingScreenWidget;
+	
 	UPROPERTY()
 	UEscapeMenu* EscapeMenu;
+
+	UPROPERTY()
+	UUserWidget* LoadingScreen;
 };
