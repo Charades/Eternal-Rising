@@ -75,12 +75,6 @@ Plugins/**/Intermediate/*
 DerivedDataCache/*
 /Saved/Config/WindowsEditor
 /Saved/Config/CrashReportClient
-
-# Custom game content
-Content/PolygonCityZombies
-Content/PolygonApocalypse
-Content/Meshes
-Content/Animations/Zombies
-Plugins/FlowFieldPathfinding
-/Content/Character_Appearance_Dissolve
+/Content/PolygonApocalypse
 /Content/PolygonMilitary
+/Content/Character_Appearance_Dissolve
