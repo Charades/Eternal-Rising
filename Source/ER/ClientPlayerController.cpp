@@ -343,61 +343,6 @@ void AClientPlayerController::SpawnActors()
 	}
 }
 
-void AClientPlayerController::MoveHordeLocation()
-{
-	FVector WorldLocation, WorldDirection;
-
-	if (DeprojectMousePositionToWorld(WorldLocation, WorldDirection))
-	{
-		FVector Start = WorldLocation;
-		FVector End = Start + (WorldDirection * 10000.0f);
-
-		FHitResult HitResult;
-		if (GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_Visibility))
-		{
-			Server_MoveHordeLocation(HitResult.Location);
-
-			DrawDebugLine(GetWorld(), Start, End, FColor::Blue, false, 1.0f, 0, 1.0f);
-		}
-	}
-}
-
-void AClientPlayerController::Server_MoveHordeLocation_Implementation(const FVector& TargetLocation)
-{
-	UE_LOG(LogTemp, Warning, TEXT("Server_MoveHordeLocation called with TargetLocation: %s"), *TargetLocation.ToString());
-
-	TArray<AActor*> FoundActors;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AFlecsZombieHorde::StaticClass(), FoundActors);
-
-	UE_LOG(LogTemp, Warning, TEXT("Found %d Horde actors"), FoundActors.Num());
-	
-	for (AActor* Actor : FoundActors)
-	{
-		AFlecsZombieHorde* Horde = Cast<AFlecsZombieHorde>(Actor);
-		if (Horde)
-		{
-			if (Horde->HasAuthority())
-			{
-				UE_LOG(LogTemp, Warning, TEXT("Calling MoveToLocation on Horde: %s"), *Horde->GetName());
-				Horde->MoveToLocation(TargetLocation);
-			}
-			else
-			{
-				UE_LOG(LogTemp, Warning, TEXT("Horde %s does not have authority!"), *Horde->GetName());
-			}
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Didn't find a Horde."));
-		}
-	}
-}
-
-bool AClientPlayerController::Server_MoveHordeLocation_Validate(const FVector& TargetLocation)
-{
-	// Optional: Add validation checks, e.g., range or ownership checks
-	return true;
-}
 
 void AClientPlayerController::ServerRequestSpawnHorde_Implementation(FVector HordeSpawnLocation, float Radius, int32 NumEntities)
 {

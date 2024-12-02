@@ -218,4 +218,6 @@ void AFlecsZombieHorde::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 void AFlecsZombieHorde::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	
+	MovementComponent->Velocity += FVector(0.0f, 0.0f, -1.0f) * 80.0f;
 }

@@ -10,7 +10,7 @@ public class ER : ModuleRules
 	
 		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "UMG", "AIModule", "NavigationSystem", "FlowFieldPathfinding", "MoviePlayer" });
 
-		PrivateDependencyModuleNames.AddRange(new string[] { "FlecsLibrary", "SteamLibrary", "Slate", "SlateCore", "OnlineSubsystem", "OnlineSubsystemUtils", "OnlineSubsystemSteam", "Steamworks", "AnimToTexture", "Networking" });
+		PrivateDependencyModuleNames.AddRange(new string[] { "FlecsLibrary", "SteamLibrary", "Slate", "SlateCore", "OnlineSubsystem", "OnlineSubsystemUtils", "OnlineSubsystemSteam", "Steamworks", "AnimToTexture", "Networking", "AnimToTextureEditor" });
 		
 		AddEngineThirdPartyPrivateStaticDependencies(Target, "Steamworks");
 	}

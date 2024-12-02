@@ -32,6 +32,8 @@ public:
 	UInputMappingContext* GetDefaultMappingContext() const { return DefaultMappingContext; }
 	UInputData* GetInputData() const { return InputData; }
 
+	void SpawnActors();
+	
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -42,12 +44,6 @@ protected:
 	void OnShowEscapeMenu(const FInputActionValue& Value);
 	void LeftMouseClick(const FInputActionValue& Value);
 	void RightMouseClick(const FInputActionValue& Value);
-	void SpawnActors();
-	void MoveHordeLocation();
-
-	// Example for moving the AI horde
-	UFUNCTION(Server, unreliable, WithValidation)
-	void Server_MoveHordeLocation(const FVector& TargetLocation);
 
 
 private:

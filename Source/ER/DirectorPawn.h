@@ -7,6 +7,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputData.h"
 #include "UI/MarqueeSelectionWidget.h"
+#include "FlecsZombieBoid.h"
 #include "ClientPlayerController.h"
 #include "FlowFieldMovement.h"
 #include "FlowFieldWorld.h"
@@ -21,14 +22,31 @@ public:
 	// Sets default values for this pawn's properties
 	ADirectorPawn();
 
-	UPROPERTY()
-	TObjectPtr<AFlowFieldWorld> FlowFieldActor;
+	UPROPERTY(Replicated)
+	AFlowFieldWorld* FlowFieldActor;
 
 	UPROPERTY()
 	UMarqueeSelectionWidget* SelectionWidget;
 
+	UPROPERTY(Replicated)
+	TArray<APawn*> SelectedPawns;
+
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UUserWidget> MarqueeWidgetClass;
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerMoveToLocation(const FVector& TargetLocation, bool bIsEnemyTarget, const TArray<APawn*>& Pawns, const TArray<UFlowFieldMovement*>& PawnMovements);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastPrepareMovement(const FVector& TargetLocation, bool bIsEnemyTarge, const TArray<APawn*>& Pawns, const TArray<UFlowFieldMovement*>& PawnMovements);
+	
+	UFUNCTION()
+	bool EnsureFlowFieldActor();
+
+	UPROPERTY(Replicated)
+	TArray<UFlowFieldMovement*> SelectedPawnMovements;
 	
 protected:
 	// Called when the game starts or when spawned
@@ -40,12 +58,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
 	UInputData* InputData;
 
-	UPROPERTY()
-	TArray<APawn*> SelectedPawns;
-
-	UPROPERTY()
-	TArray<UFlowFieldMovement*> PawnMovements;
-
 public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -56,6 +68,7 @@ public:
 	void StartMarqueeSelection();
 	void EndMarqueeSelection();
 	void MoveToLocation();
+	void SpawnActors();
 	
 	bool bIsSelecting = false;
 	bool FoundStartPosition = false;

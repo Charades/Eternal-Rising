@@ -18,10 +18,15 @@ public:
 	UPROPERTY(BlueprintReadWrite)
 	TArray<FS_Cell> GridCells;
 
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	UPROPERTY(Replicated)
+	bool bIsInitialized;
+	
 public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;

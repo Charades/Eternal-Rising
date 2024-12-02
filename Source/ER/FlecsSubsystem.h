@@ -5,6 +5,7 @@
 #include "FlecsZombieHorde.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "FlecsAIController.h"
+#include "SurvivorPawn.h"
 #include "flecs.h"
 #include <algorithm>
 #include <cmath>
@@ -107,6 +108,25 @@ public:
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+	UPROPERTY()
+	AFlowFieldWorld* FlowFieldActor;
+	
+	void InitializeFlowFieldActor(UWorld* World);
+
+	UFUNCTION(Server, Reliable)
+	void ServerInitiateMovement(const FVector& TargetLocation, bool bIsEnemyTarget, const TArray<AFlecsZombieBoid*>& Boids);
+	
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastExecuteMovement(const FVector& TargetLocation, bool bIsEnemyTarget, const TArray<AFlecsZombieBoid*>& Boids);
+
+	UPROPERTY(Replicated)
+	TArray<AFlecsZombieBoid*> SelectedPawns;
+
+	UPROPERTY(Replicated)
+	TArray<AFlecsZombieBoid*> SelectedPawnMovements;
+
+	bool EnsureFlowFieldActor();
+	
 protected:
 	FTickerDelegate OnTickDelegate;
 	FTSTicker::FDelegateHandle OnTickHandle;

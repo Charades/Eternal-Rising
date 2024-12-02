@@ -3,7 +3,10 @@
 
 #include "DirectorPawn.h"
 
+#include "FlecsZombieBoid.h"
 #include "FlowFieldMovement.h"
+#include "Net/UnrealNetwork.h"
+#include "SurvivorPawn.h"
 #include "Engine/OverlapResult.h"
 
 
@@ -42,12 +45,7 @@ void ADirectorPawn::BeginPlay()
 		}
 	}
     
-	FlowFieldActor = Cast<AFlowFieldWorld>(UGameplayStatics::GetActorOfClass(GetWorld(), AFlowFieldWorld::StaticClass()));
-
-	if (!FlowFieldActor)
-	{
-		UE_LOG(LogTemp, Error, TEXT("FlowFieldActor is null! Ensure there is an instance of AFlowFieldCPP in the level."));
-	}
+	EnsureFlowFieldActor();
 }
 
 // Called every frame
@@ -66,6 +64,15 @@ void ADirectorPawn::Tick(float DeltaTime)
 	}
 }
 
+void ADirectorPawn::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+    
+	DOREPLIFETIME(ADirectorPawn, SelectedPawns);
+	DOREPLIFETIME(ADirectorPawn, SelectedPawnMovements);
+	DOREPLIFETIME(ADirectorPawn, FlowFieldActor);
+}
+
 // Called to bind functionality to input
 void ADirectorPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
@@ -78,6 +85,7 @@ void ADirectorPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 		{
 			EnhancedInputComponent->BindAction(InputData->StartDragEvent, ETriggerEvent::Started, this, &ADirectorPawn::StartMarqueeSelection);
 			EnhancedInputComponent->BindAction(InputData->EndDragEvent, ETriggerEvent::Completed, this, &ADirectorPawn::EndMarqueeSelection);
+			EnhancedInputComponent->BindAction(InputData->LeftMouseClick, ETriggerEvent::Completed, this, &ADirectorPawn::SpawnActors);
 			EnhancedInputComponent->BindAction(InputData->RightMouseClick, ETriggerEvent::Completed, this, &ADirectorPawn::MoveToLocation);
 			UE_LOG(LogTemp, Log, TEXT("Input actions bound in SetupPlayerInputComponent"));
 		}
@@ -143,52 +151,6 @@ void ADirectorPawn::EndMarqueeSelection()
 	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("Drag ended!"));
 }
 
-void ADirectorPawn::MoveToLocation()
-{
-	FVector WorldLocation, WorldDirection;
-
-	if (APlayerController* PC = Cast<APlayerController>(GetController()))
-	{
-		if (PC->DeprojectMousePositionToWorld(WorldLocation, WorldDirection))
-		{
-			FVector Start = WorldLocation;
-			FVector End = Start + (WorldDirection * 40000.0f);
-
-			FHitResult HitResult;
-			if (GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_Visibility))
-			{
-				StartPosition = HitResult.ImpactPoint;
-				
-				if (!PawnMovements.IsEmpty())
-				{
-					GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("We can move these pawns"));
-					TMap<FVector2D, FVector> DirectionMap;
-					FVector GoalPosition;
-					FlowFieldActor->GenerateFlowField(FlowFieldActor->GridCells, StartPosition, DirectionMap, GoalPosition);
-
-					for (UFlowFieldMovement* Movement : PawnMovements)
-					{
-						if (Movement)
-						{
-							Movement->BeginMovement(DirectionMap, GoalPosition);
-						}
-					}
-				}
-				else
-				{
-					FoundStartPosition = true;
-					StartPosition = HitResult.ImpactPoint;
-				}
-				DrawDebugLine(GetWorld(), Start, End, FColor::Blue, false, 1.0f, 0, 1.0f);
-			}
-			else
-			{
-				FoundStartPosition = false;
-			}
-		}
-	}
-}
-
 void ADirectorPawn::PerformSelection(const FVector2D& TopLeft, const FVector2D& BottomRight)
 {
     UWorld* World = GetWorld();
@@ -198,29 +160,32 @@ void ADirectorPawn::PerformSelection(const FVector2D& TopLeft, const FVector2D& 
     if (!PC) return;
 
     // Clear previous selection
+    for (APawn* SelectedPawn : SelectedPawns)
+    {
+        SelectedPawn->GetComponentByClass<UInstancedStaticMeshComponent>()->SetCustomDepthStencilValue(0);
+    }
+    
     SelectedPawns.Empty();
-	PawnMovements.Empty();
+    SelectedPawnMovements.Empty();
 
     // Get all pawns in the world first
     TArray<AActor*> AllPawns;
-    UGameplayStatics::GetAllActorsOfClass(World, APawn::StaticClass(), AllPawns);
+    UGameplayStatics::GetAllActorsOfClass(World, AFlecsZombieBoid::StaticClass(), AllPawns);
 
-	// Add a buffer to make selection more forgiving (adjust this value as needed)
-	const float SelectionBuffer = 20.0f; // Buffer in pixels
+    // Add a buffer to make selection more forgiving
+    const float SelectionBuffer = 20.0f;
 
-	// Screen bounds for our selection box with buffer
-	float MinX = FMath::Min(TopLeft.X, BottomRight.X) - SelectionBuffer;
-	float MaxX = FMath::Max(TopLeft.X, BottomRight.X) + SelectionBuffer;
-	float MinY = FMath::Min(TopLeft.Y, BottomRight.Y) - SelectionBuffer;
-	float MaxY = FMath::Max(TopLeft.Y, BottomRight.Y) + SelectionBuffer;
+    // Screen bounds for our selection box with buffer
+    float MinX = FMath::Min(TopLeft.X, BottomRight.X) - SelectionBuffer;
+    float MaxX = FMath::Max(TopLeft.X, BottomRight.X) + SelectionBuffer;
+    float MinY = FMath::Min(TopLeft.Y, BottomRight.Y) - SelectionBuffer;
+    float MaxY = FMath::Max(TopLeft.Y, BottomRight.Y) + SelectionBuffer;
 
     // Check each pawn to see if it's in our selection box
     for (AActor* Actor : AllPawns)
     {
-        if (APawn* Pawn = Cast<APawn>(Actor))
+        if (AFlecsZombieBoid* Pawn = Cast<AFlecsZombieBoid>(Actor))
         {
-            if (Pawn == this) continue; // Skip the director pawn itself
-
             FVector2D ScreenPos;
             if (PC->ProjectWorldLocationToScreen(Pawn->GetActorLocation(), ScreenPos))
             {
@@ -228,53 +193,27 @@ void ADirectorPawn::PerformSelection(const FVector2D& TopLeft, const FVector2D& 
                 if (ScreenPos.X >= MinX && ScreenPos.X <= MaxX &&
                     ScreenPos.Y >= MinY && ScreenPos.Y <= MaxY)
                 {
-                    // Do an additional visibility check (optional)
-                    FHitResult HitResult;
-                    FVector PawnLocation = Pawn->GetActorLocation();
-                    FVector CameraLocation = PC->PlayerCameraManager->GetCameraLocation();
-                    
-                    FCollisionQueryParams QueryParams;
-                    QueryParams.AddIgnoredActor(this);
-                    QueryParams.AddIgnoredActor(Pawn);
-                    
-                    bool bHasLineOfSight = !World->LineTraceSingleByChannel(
-                        HitResult,
-                        CameraLocation,
-                        PawnLocation,
-                        ECC_Visibility,
-                        QueryParams
-                    );
+                    SelectedPawns.Add(Pawn);
+                    Pawn->GetComponentByClass<UInstancedStaticMeshComponent>()->SetCustomDepthStencilValue(1);
 
-                    if (bHasLineOfSight)
+                    // Directly get the FlowFieldMovement component from the Boid
+                    if (UFlowFieldMovement* MovementComponent = Pawn->FlowFieldMovement)
                     {
-                        SelectedPawns.Add(Pawn);
-
-                    	if (UFlowFieldMovement* MovementComponent = Pawn->FindComponentByClass<UFlowFieldMovement>())
-                    	{
-                    		if (!PawnMovements.Contains(MovementComponent))
-                    		{
-                    			PawnMovements.Add(MovementComponent);
-                    			GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red,  FString::Printf(TEXT("Added Movement Component from Pawn: %s"), *Pawn->GetName()));
-                    		}
-                    		else
-                    		{
-                    			GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red,  FString::Printf(TEXT("Movement Component already exists for Pawn: %s"), *Pawn->GetName()));
-                    		}
-                    	}
-                    	else
-                    	{
-                    		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, FString::Printf(TEXT("No FlowFieldMovement Component found in Pawn: %s"), *Pawn->GetName()));
-                    	}
-                    	
-                        //UE_LOG(LogTemp, Log, TEXT("Selected Pawn: %s"), *Pawn->GetName());
-                    	//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red,  *Pawn->GetName());
+                        SelectedPawnMovements.Add(MovementComponent);
+                        GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, 
+                            FString::Printf(TEXT("Added Movement Component from Pawn: %s"), *Pawn->GetName()));
+                    }
+                    else
+                    {
+                        GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, 
+                            FString::Printf(TEXT("No FlowFieldMovement Component found in Pawn: %s"), *Pawn->GetName()));
                     }
                 }
             }
         }
     }
 
-    // For debugging: Draw debug lines in world space to show selected pawns
+    // Debug visualization remains the same
     for (APawn* SelectedPawn : SelectedPawns)
     {
         DrawDebugBox(
@@ -287,4 +226,159 @@ void ADirectorPawn::PerformSelection(const FVector2D& TopLeft, const FVector2D& 
             1.0f
         );
     }
+}
+
+bool ADirectorPawn::ServerMoveToLocation_Validate(const FVector& TargetLocation, bool bIsEnemyTarget, const TArray<APawn*>& Pawns, const TArray<UFlowFieldMovement*>& PawnMovements)
+{
+	return true; // Add any necessary validation
+}
+
+void ADirectorPawn::ServerMoveToLocation_Implementation(const FVector& TargetLocation, bool bIsEnemyTarget, const TArray<APawn*>& Pawns, const TArray<UFlowFieldMovement*>& PawnMovements)
+{
+	// Add debug message to verify server execution
+	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Green, FString::Printf(TEXT("Server: Move to location called")));
+    
+	MulticastPrepareMovement(TargetLocation, bIsEnemyTarget, Pawns, PawnMovements);
+}
+
+bool ADirectorPawn::EnsureFlowFieldActor()
+{
+	if (!FlowFieldActor)
+	{
+		// Try to find the FlowFieldActor in the world
+		FlowFieldActor = Cast<AFlowFieldWorld>(UGameplayStatics::GetActorOfClass(GetWorld(), AFlowFieldWorld::StaticClass()));
+        
+		// Debug message about the attempt
+		GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, 
+			FString::Printf(TEXT("EnsureFlowFieldActor result: %s"), 
+			FlowFieldActor ? TEXT("Found") : TEXT("Not Found")));
+	}
+    
+	return FlowFieldActor != nullptr;
+}
+
+void ADirectorPawn::MulticastPrepareMovement_Implementation(const FVector& TargetLocation, bool bIsEnemyTarget, const TArray<APawn*>& Pawns, const TArray<UFlowFieldMovement*>& PawnMovements)
+{
+    // Add debug message to verify client execution
+    if (!HasAuthority())
+    {
+        GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Blue, 
+            FString::Printf(TEXT("Client: Multicast received. Pawns: %d"), Pawns.Num()));
+    }
+
+	if (!EnsureFlowFieldActor())
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, TEXT("Failed to find FlowFieldActor!"));
+		return;
+	}
+    
+    // Store the pawns locally
+    SelectedPawns = Pawns;
+    StartPosition = TargetLocation;
+    
+    if (!PawnMovements.IsEmpty())
+    {
+        TMap<FVector2D, FVector> DirectionMap;
+        FVector GoalPosition;
+    	
+        FlowFieldActor->GenerateFlowField(FlowFieldActor->GridCells, StartPosition, DirectionMap, GoalPosition);
+
+        // Debug message for flow field generation
+        GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, 
+            FString::Printf(TEXT("Generated flow field. Goal: %s"), *GoalPosition.ToString()));
+
+        for (UFlowFieldMovement* Movement : PawnMovements)
+        {
+            if (Movement)
+            {
+                Movement->SetExternalNeighbors(SelectedPawns);
+                Movement->BeginMovement(DirectionMap, GoalPosition);
+                
+                if (bIsEnemyTarget)
+                {
+                    // Find closest survivor to the target location
+                    ASurvivorPawn* ClosestSurvivor = nullptr;
+                    float ClosestDistance = MAX_FLT;
+                    
+                    TArray<AActor*> FoundSurvivors;
+                    UGameplayStatics::GetAllActorsOfClass(GetWorld(), ASurvivorPawn::StaticClass(), FoundSurvivors);
+                    
+                    for (AActor* Actor : FoundSurvivors)
+                    {
+                        float Distance = FVector::Distance(Actor->GetActorLocation(), TargetLocation);
+                        if (Distance < ClosestDistance)
+                        {
+                            ClosestDistance = Distance;
+                            ClosestSurvivor = Cast<ASurvivorPawn>(Actor);
+                        }
+                    }
+                    
+                    if (ClosestSurvivor)
+                    {
+                        Movement->SetTargetEnemy(ClosestSurvivor);
+                    }
+                }
+                else
+                {
+                    Movement->ClearTargetEnemy();
+                }
+            }
+        }
+    }
+}
+
+void ADirectorPawn::MoveToLocation()
+{
+	FVector WorldLocation, WorldDirection;
+
+	if (AClientPlayerController* PC = Cast<AClientPlayerController>(GetController()))
+	{
+		if (PC->DeprojectMousePositionToWorld(WorldLocation, WorldDirection))
+		{
+			FVector Start = WorldLocation;
+			FVector End = Start + (WorldDirection * 40000.0f);
+
+			FHitResult HitResult;
+			FCollisionQueryParams QueryParams;
+			QueryParams.AddIgnoredActor(this);
+
+			ASurvivorPawn* TargetSurvivor = nullptr;
+			TArray<FHitResult> HitResults;
+			FCollisionObjectQueryParams ObjectQueryParams;
+			ObjectQueryParams.AddObjectTypesToQuery(ECC_Pawn);
+
+			// Debug message for initial call
+			GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::White, 
+				FString::Printf(TEXT("MoveToLocation called. Selected Pawns: %d"), SelectedPawns.Num()));
+
+			if (GetWorld()->LineTraceMultiByObjectType(HitResults, Start, End, ObjectQueryParams, QueryParams))
+			{
+				for (const FHitResult& Hit : HitResults)
+				{
+					if (ASurvivorPawn* Survivor = Cast<ASurvivorPawn>(Hit.GetActor()))
+					{
+						TargetSurvivor = Survivor;
+						break;
+					}
+				}
+			}
+
+			if (TargetSurvivor)
+			{
+				ServerMoveToLocation(TargetSurvivor->GetActorLocation(), true, SelectedPawns, SelectedPawnMovements);
+			}
+			else if (GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_Visibility))
+			{
+				ServerMoveToLocation(HitResult.ImpactPoint, false, SelectedPawns, SelectedPawnMovements);
+			}
+		}
+	}
+}
+
+void ADirectorPawn::SpawnActors()
+{
+	if (AClientPlayerController* PC = Cast<AClientPlayerController>(GetController()))
+	{
+		PC->SpawnActors();
+	}
 }
