@@ -5,7 +5,7 @@
 #include "Engine/OverlapResult.h"
 
 // Sets default values for this component's properties
-UFlowFieldMovement::UFlowFieldMovement(): Move(false), WanderRadius(250.0f), bDestinationReached(false)
+UFlowFieldMovement::UFlowFieldMovement(): Move(false), WanderRadius(250.0f), bDestinationReached(false) , bIsBeingDestroyed(false)
 {
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
@@ -401,14 +401,35 @@ void UFlowFieldMovement::SetExternalNeighbors(const TArray<APawn*>& InNeighbors)
 
 TArray<APawn*> UFlowFieldMovement::GetNeighbors()
 {
+	if (bIsBeingDestroyed)
+	{
+		return TArray<APawn*>();
+	}
+
+	TArray<APawn*> Neighbors;
+	if (!OwnerPawn)
+		return Neighbors;
+
+	if (bUseExternalNeighbors && !ExternalNeighbors.IsEmpty())
+	{
+		// Filter out any destroyed pawns from external neighbors
+		TArray<APawn*> ValidNeighbors;
+		for (APawn* Neighbor : ExternalNeighbors)
+		{
+			if (IsValid(Neighbor) && !Neighbor->IsPendingKillPending())
+			{
+				ValidNeighbors.Add(Neighbor);
+			}
+		}
+		return ValidNeighbors;
+	}
+	
 	// If external neighbors are set, use them
 	if (bUseExternalNeighbors && !ExternalNeighbors.IsEmpty())
 	{
 		return ExternalNeighbors;
 	}
-
-	// Fallback to original neighbor detection method
-	TArray<APawn*> Neighbors;
+	
 	if (!OwnerPawn)
 		return Neighbors;
 
@@ -593,6 +614,28 @@ void UFlowFieldMovement::FindAndTargetNearbyEnemy()
 	}
 }
 
+void UFlowFieldMovement::PrepareForDestruction()
+{
+	bIsBeingDestroyed = true;
+    
+	// Remove this pawn from external neighbors of other pawns
+	TArray<AActor*> AllPawns;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), APawn::StaticClass(), AllPawns);
+    
+	for (AActor* Actor : AllPawns)
+	{
+		if (APawn* OtherPawn = Cast<APawn>(Actor))
+		{
+			if (UFlowFieldMovement* OtherMovement = OtherPawn->FindComponentByClass<UFlowFieldMovement>())
+			{
+				// Remove this pawn from other pawns' external neighbors
+				TArray<APawn*> UpdatedNeighbors = OtherMovement->ExternalNeighbors;
+				UpdatedNeighbors.Remove(Cast<APawn>(GetOwner()));
+				OtherMovement->SetExternalNeighbors(UpdatedNeighbors);
+			}
+		}
+	}
+}
 
 void UFlowFieldMovement::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {

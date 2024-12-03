@@ -197,6 +197,10 @@ void AFlecsZombieBoid::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherAct
 {
 	if (OtherActor->IsA(AProjectileActor::StaticClass()))
 	{
+		if (UFlowFieldMovement* Movement = FindComponentByClass<UFlowFieldMovement>())
+		{
+			Movement->PrepareForDestruction();
+		}
 		Destroy();
 	}
 }

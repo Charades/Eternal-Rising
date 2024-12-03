@@ -98,6 +98,8 @@ public:
 	FVector GetWanderingDirection();
 	void ApplyMovementAndRotation(FVector DesiredDirection, float DeltaTime);
 	
+	void PrepareForDestruction();
+	
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
@@ -107,6 +109,8 @@ protected:
 
 	// Method to check and perform attack
 	void CheckAndPerformAttack();
+
+	bool bIsBeingDestroyed;
 
 public:
 	// Called every frame
