@@ -15,6 +15,15 @@ public:
 	// Sets default values for this pawn's properties
 	ASurvivorPawn();
 
+	UFUNCTION(BlueprintCallable, Category = "Health")
+	void InflictDamage(float DamageAmount);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Health")
+	float CurrentHealth;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Health")
+	float MaxHealth;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

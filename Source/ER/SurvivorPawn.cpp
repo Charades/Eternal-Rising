@@ -2,7 +2,8 @@
 
 
 #include "SurvivorPawn.h"
-
+#include "Kismet/GameplayStatics.h"
+#include "SpawnActor.h"
 
 // Sets default values
 ASurvivorPawn::ASurvivorPawn()
@@ -10,13 +11,15 @@ ASurvivorPawn::ASurvivorPawn()
 	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	bReplicates = true;
+
+	MaxHealth = 100.0f;
+	CurrentHealth = MaxHealth;
 }
 
 // Called when the game starts or when spawned
 void ASurvivorPawn::BeginPlay()
 {
 	Super::BeginPlay();
-	
 }
 
 // Called every frame
@@ -31,3 +34,9 @@ void ASurvivorPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 }
 
+void ASurvivorPawn::InflictDamage(float DamageAmount)
+{
+	CurrentHealth = FMath::Max(0.0f, CurrentHealth - DamageAmount);
+	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, 
+		FString::Printf(TEXT("Health: %.1f"), CurrentHealth));
+}

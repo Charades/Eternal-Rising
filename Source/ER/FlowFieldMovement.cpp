@@ -502,11 +502,10 @@ void UFlowFieldMovement::CheckAndPerformAttack()
     float DistanceToTarget = FVector::Distance(OwnerPawn->GetActorLocation(), CurrentTargetEnemy->GetActorLocation());
     
     // Attack range (adjust as needed)
-    const float AttackRange = 200.0f;
+    const float AttackRange = 120.0f;
 
     if (DistanceToTarget <= AttackRange)
     {
-        // Perform attack using line traces similar to obstacle avoidance
         FVector Start = OwnerPawn->GetActorLocation();
         Start.Z = 50.0f;
         
@@ -611,7 +610,6 @@ void UFlowFieldMovement::TickComponent(float DeltaTime, ELevelTick TickType, FAc
         // If enemy is close enough, perform attack
         if (DistanceToEnemy <= GoalAcceptanceDist)
         {
-            CheckAndPerformAttack();
             Move = false;
             bDestinationReached = true;
         	OwnerPawn->PerformAttack(CurrentTargetEnemy);

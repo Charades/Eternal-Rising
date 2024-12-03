@@ -4,6 +4,7 @@
 
 #include "AIController.h"
 #include "AnimToTextureInstancePlaybackHelpers.h"
+#include "SurvivorPawn.h"
 #include "ZombieMeshStruct.h"
 #include "Net/UnrealNetwork.h"
 #include "Engine/EngineTypes.h"
@@ -97,24 +98,53 @@ void AFlecsZombieBoid::OnConstruction(const FTransform& Transform)
 	InitializeMeshInstances();
 }
 
-void AFlecsZombieBoid::SetAnimation(int index)
+bool AFlecsZombieBoid::SetAnimation(int index)
 {
 	FAnimToTextureAutoPlayData AutoPlayData;
 	bool bDataValid = UAnimToTextureInstancePlaybackLibrary::GetAutoPlayDataFromDataAsset(Row->DataAsset, index, AutoPlayData, 0.0f, 1.0f);
+	
 	if (bDataValid)
 	{
-		UAnimToTextureInstancePlaybackLibrary::UpdateInstanceAutoPlayData(InstancedStaticMeshComponent, 0, AutoPlayData, true);
+		return UAnimToTextureInstancePlaybackLibrary::UpdateInstanceAutoPlayData(InstancedStaticMeshComponent, 0, AutoPlayData, true);
 	}
-	else
-	{
 		UE_LOG(LogTemp, Error, TEXT("Failed to get AutoPlayData from DataAsset"));
-	}
+		return false;
 }
 
 void AFlecsZombieBoid::PerformAttack(AActor* Actor)
 {
-	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("Attack started!"));
-	SetAnimation(4);
+	float CurrentTime = GetWorld()->GetTimeSeconds();
+
+	if (LastAttackTime < 0 || (CurrentTime - LastAttackTime) >= AttackCooldown)
+	{
+		SetAnimation(4);
+		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("Attack started!"));
+        
+		CurrentTarget = Actor;
+		LastAttackTime = CurrentTime;
+
+		// Schedule the damage to occur after animation starts
+		GetWorld()->GetTimerManager().SetTimer(
+			DamageTimerHandle,
+			this,
+			&AFlecsZombieBoid::ApplyDelayedDamage,
+			DamageDelay,
+			false
+		);
+	}
+}
+
+void AFlecsZombieBoid::ApplyDelayedDamage()
+{
+	if (CurrentTarget)
+	{
+		if (ASurvivorPawn* SurvivorPawn = Cast<ASurvivorPawn>(CurrentTarget))
+		{
+			SurvivorPawn->InflictDamage(5.0f);
+			GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow, TEXT("Damage Applied!"));
+		}
+		CurrentTarget = nullptr;
+	}
 }
 
 void AFlecsZombieBoid::InitializeMeshInstances()

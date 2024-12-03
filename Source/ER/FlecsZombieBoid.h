@@ -32,10 +32,20 @@ public:
 	UFloatingPawnMovement* FloatingPawnMovement;
 	
 	UFUNCTION()
-	void SetAnimation(int index);
+	bool SetAnimation(int index);
+
+	UFUNCTION()
 	void PerformAttack(AActor* Actor);
+	
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+	void ApplyDelayedDamage();
+	
+	FTimerHandle DamageTimerHandle;
+
+	UPROPERTY()
+	AActor* CurrentTarget;
+	
 protected:
 	virtual void BeginPlay() override;
 	
@@ -55,6 +65,15 @@ protected:
 	UCapsuleComponent* CollisionComponent;
 
 	bool bAutoPlay;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	float AttackCooldown = 2.0f; // Time in seconds between attacks
+
+	UPROPERTY()
+	float LastAttackTime = -1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	float DamageDelay = 0.5f; // Time to wait before applying damage
 
 private:
 	UPROPERTY(EditAnywhere)
