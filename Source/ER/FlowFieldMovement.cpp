@@ -275,12 +275,15 @@ void UFlowFieldMovement::ApplyMovementAndRotation(FVector DesiredDirection, floa
         FHitResult HitResult;
         FCollisionQueryParams QueryParams;
         QueryParams.AddIgnoredActor(OwnerPawn);
+    	
+    	FCollisionObjectQueryParams ObjectQueryParams;
+    	ObjectQueryParams.RemoveObjectTypesToQuery(ECC_GameTraceChannel1);
 
-        if (GetWorld()->LineTraceSingleByChannel(
+        if (GetWorld()->LineTraceSingleByObjectType(
             HitResult, 
             Start, 
             End, 
-            ECC_Visibility, 
+            ObjectQueryParams, 
             QueryParams
         ))
         {

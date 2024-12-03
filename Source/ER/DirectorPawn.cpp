@@ -160,9 +160,12 @@ void ADirectorPawn::PerformSelection(const FVector2D& TopLeft, const FVector2D& 
     if (!PC) return;
 
     // Clear previous selection
-    for (APawn* SelectedPawn : SelectedPawns)
+    for (APawn* Pawn : SelectedPawns)
     {
-        SelectedPawn->GetComponentByClass<UInstancedStaticMeshComponent>()->SetCustomDepthStencilValue(0);
+    	if (IsValid(Pawn) && !Pawn->IsPendingKillPending())
+    	{
+    		Pawn->GetComponentByClass<UInstancedStaticMeshComponent>()->SetCustomDepthStencilValue(0);
+    	}
     }
     
     SelectedPawns.Empty();
@@ -184,33 +187,36 @@ void ADirectorPawn::PerformSelection(const FVector2D& TopLeft, const FVector2D& 
     // Check each pawn to see if it's in our selection box
     for (AActor* Actor : AllPawns)
     {
-        if (AFlecsZombieBoid* Pawn = Cast<AFlecsZombieBoid>(Actor))
-        {
-            FVector2D ScreenPos;
-            if (PC->ProjectWorldLocationToScreen(Pawn->GetActorLocation(), ScreenPos))
-            {
-                // Check if the pawn's screen position is within our marquee bounds
-                if (ScreenPos.X >= MinX && ScreenPos.X <= MaxX &&
-                    ScreenPos.Y >= MinY && ScreenPos.Y <= MaxY)
-                {
-                    SelectedPawns.Add(Pawn);
-                    Pawn->GetComponentByClass<UInstancedStaticMeshComponent>()->SetCustomDepthStencilValue(1);
+    	if (IsValid(Actor) && !Actor->IsPendingKillPending())
+    	{
+    		if (AFlecsZombieBoid* Pawn = Cast<AFlecsZombieBoid>(Actor))
+    		{
+    			FVector2D ScreenPos;
+    			if (PC->ProjectWorldLocationToScreen(Pawn->GetActorLocation(), ScreenPos))
+    			{
+    				// Check if the pawn's screen position is within our marquee bounds
+    				if (ScreenPos.X >= MinX && ScreenPos.X <= MaxX &&
+						ScreenPos.Y >= MinY && ScreenPos.Y <= MaxY)
+    				{
+    					SelectedPawns.Add(Pawn);
+    					Pawn->GetComponentByClass<UInstancedStaticMeshComponent>()->SetCustomDepthStencilValue(1);
 
-                    // Directly get the FlowFieldMovement component from the Boid
-                    if (UFlowFieldMovement* MovementComponent = Pawn->FlowFieldMovement)
-                    {
-                        SelectedPawnMovements.Add(MovementComponent);
-                        GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, 
-                            FString::Printf(TEXT("Added Movement Component from Pawn: %s"), *Pawn->GetName()));
-                    }
-                    else
-                    {
-                        GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, 
-                            FString::Printf(TEXT("No FlowFieldMovement Component found in Pawn: %s"), *Pawn->GetName()));
-                    }
-                }
-            }
-        }
+    					// Directly get the FlowFieldMovement component from the Boid
+    					if (UFlowFieldMovement* MovementComponent = Pawn->FlowFieldMovement)
+    					{
+    						SelectedPawnMovements.Add(MovementComponent);
+    						GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, 
+								FString::Printf(TEXT("Added Movement Component from Pawn: %s"), *Pawn->GetName()));
+    					}
+    					else
+    					{
+    						GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, 
+								FString::Printf(TEXT("No FlowFieldMovement Component found in Pawn: %s"), *Pawn->GetName()));
+    					}
+    				}
+    			}
+    		}
+    	}
     }
 
     // Debug visualization remains the same
@@ -266,17 +272,32 @@ void ADirectorPawn::MulticastPrepareMovement_Implementation(const FVector& Targe
             FString::Printf(TEXT("Client: Multicast received. Pawns: %d"), Pawns.Num()));
     }
 
-	if (!EnsureFlowFieldActor())
+	TArray<APawn*> ValidPawns;
+	TArray<UFlowFieldMovement*> ValidMovements;
+
+	// Filter out invalid pawns
+	for (APawn* Pawn : Pawns)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, TEXT("Failed to find FlowFieldActor!"));
-		return;
+		if (IsValid(Pawn) && !Pawn->IsPendingKillPending())
+		{
+			ValidPawns.Add(Pawn);
+		}
 	}
+
+	// Filter out invalid movement components
+	for (UFlowFieldMovement* Movement : PawnMovements)
+	{
+		if (IsValid(Movement) && IsValid(Movement->GetOwner()) && !Movement->GetOwner()->IsPendingKillPending())
+		{
+			ValidMovements.Add(Movement);
+		}
+	}
+
+	// Update stored pawns with only valid ones
+	SelectedPawns = ValidPawns;
+	StartPosition = TargetLocation;
     
-    // Store the pawns locally
-    SelectedPawns = Pawns;
-    StartPosition = TargetLocation;
-    
-    if (!PawnMovements.IsEmpty())
+	if (!ValidMovements.IsEmpty() && EnsureFlowFieldActor())
     {
         TMap<FVector2D, FVector> DirectionMap;
         FVector GoalPosition;
