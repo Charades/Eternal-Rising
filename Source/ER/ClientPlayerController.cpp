@@ -68,27 +68,27 @@ void AClientPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Only attempt to set up input on clients, not dedicated servers
-	if (!HasAuthority()) // This checks if this is a client
-	{
-		if (ULocalPlayer* LocalPlayer = GetLocalPlayer())
-		{
-			if (UEnhancedInputLocalPlayerSubsystem* Subsystem = LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
-			{
-				// Add the default mapping context
-				Subsystem->AddMappingContext(DefaultMappingContext, 0);
-				UE_LOG(LogTemp, Log, TEXT("Default mapping context added."));
-			}
-			else
-			{
-				UE_LOG(LogTemp, Warning, TEXT("Failed to get EnhancedInputLocalPlayerSubsystem."));
-			}
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Unable to get LocalPlayer - check network setup."));
-		}
-	}
+	// // Only attempt to set up input on clients
+	// if (!HasAuthority())
+	// {
+	// 	if (ULocalPlayer* LocalPlayer = GetLocalPlayer())
+	// 	{
+	// 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
+	// 		{
+	// 			// Add the default mapping context
+	// 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
+	// 			UE_LOG(LogTemp, Log, TEXT("Default mapping context added."));
+	// 		}
+	// 		else
+	// 		{
+	// 			UE_LOG(LogTemp, Warning, TEXT("Failed to get EnhancedInputLocalPlayerSubsystem."));
+	// 		}
+	// 	}
+	// 	else
+	// 	{
+	// 		UE_LOG(LogTemp, Warning, TEXT("Unable to get LocalPlayer - check network setup."));
+	// 	}
+	// }
 }
 
 void AClientPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -145,57 +145,55 @@ void AClientPlayerController::ConnectToServer(const FString& ServerSteamID)
 void AClientPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
-	
-	// Ensure InputComponent is valid
-	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(InputComponent))
-	{
-		if (InputData) {
-			if (InputData->ShowEscapeMenu)
-			{
-				EnhancedInputComponent->BindAction(InputData->ShowEscapeMenu, ETriggerEvent::Completed, this, &AClientPlayerController::OnShowEscapeMenu);
-				UE_LOG(LogTemp, Log, TEXT("Escape Menu action bound."));
-			}
-			else
-			{
-				UE_LOG(LogTemp, Warning, TEXT("ShowEscapeMenu is null."));
-			}
-
-			if (InputData->LeftMouseClick)
-			{
-				EnhancedInputComponent->BindAction(InputData->LeftMouseClick, ETriggerEvent::Completed, this, &AClientPlayerController::LeftMouseClick);
-				UE_LOG(LogTemp, Log, TEXT("Left Mouse Click action bound."));
-			}
-			else
-			{
-				UE_LOG(LogTemp, Warning, TEXT("LeftMouseClick is null."));
-			}
-
-			if (InputData->RightMouseClick)
-			{
-				EnhancedInputComponent->BindAction(InputData->RightMouseClick, ETriggerEvent::Completed, this, &AClientPlayerController::RightMouseClick);
-				UE_LOG(LogTemp, Log, TEXT("Right Mouse Click action bound."));
-			}
-			else
-			{
-				UE_LOG(LogTemp, Warning, TEXT("RightMouseClick is null."));
-			}
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("InputData is null."));
-		}
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("EnhancedInputComponent not found."));
-	}
+	//
+	// // Ensure InputComponent is valid
+	// if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(InputComponent))
+	// {
+	// 	if (InputData) {
+	// 		if (InputData->ShowEscapeMenu)
+	// 		{
+	// 			EnhancedInputComponent->BindAction(InputData->ShowEscapeMenu, ETriggerEvent::Completed, this, &AClientPlayerController::OnShowEscapeMenu);
+	// 			UE_LOG(LogTemp, Log, TEXT("Escape Menu action bound."));
+	// 		}
+	// 		else
+	// 		{
+	// 			UE_LOG(LogTemp, Warning, TEXT("ShowEscapeMenu is null."));
+	// 		}
+	//
+	// 		if (InputData->LeftMouseClick)
+	// 		{
+	// 			EnhancedInputComponent->BindAction(InputData->LeftMouseClick, ETriggerEvent::Completed, this, &AClientPlayerController::LeftMouseClick);
+	// 			UE_LOG(LogTemp, Log, TEXT("Left Mouse Click action bound."));
+	// 		}
+	// 		else
+	// 		{
+	// 			UE_LOG(LogTemp, Warning, TEXT("LeftMouseClick is null."));
+	// 		}
+	//
+	// 		if (InputData->RightMouseClick)
+	// 		{
+	// 			EnhancedInputComponent->BindAction(InputData->RightMouseClick, ETriggerEvent::Completed, this, &AClientPlayerController::RightMouseClick);
+	// 			UE_LOG(LogTemp, Log, TEXT("Right Mouse Click action bound."));
+	// 		}
+	// 		else
+	// 		{
+	// 			UE_LOG(LogTemp, Warning, TEXT("RightMouseClick is null."));
+	// 		}
+	// 	}
+	// 	else
+	// 	{
+	// 		UE_LOG(LogTemp, Warning, TEXT("InputData is null."));
+	// 	}
+	// }
+	// else
+	// {
+	// 	UE_LOG(LogTemp, Warning, TEXT("EnhancedInputComponent not found."));
+	// }
 }
 
 void AClientPlayerController::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-
-	SetShowMouseCursor(true);
 }
 
 void AClientPlayerController::OnShowEscapeMenu(const FInputActionValue& Value)
@@ -256,23 +254,9 @@ void AClientPlayerController::OnShowEscapeMenu(const FInputActionValue& Value)
 	}
 }
 
-void AClientPlayerController::LeftMouseClick(const FInputActionValue& Value)
-{
-	//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("Left Mouse Click Event"));
-
-	//SpawnActors();
-}
-
-void AClientPlayerController::RightMouseClick(const FInputActionValue& Value)
-{
-	//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("Left Mouse Click Event"));
-
-	//MoveHordeLocation();
-}
-
 void AClientPlayerController::SpawnActors()
 {
-		FVector WorldLocation, WorldDirection;
+	FVector WorldLocation, WorldDirection;
 
 	if (DeprojectMousePositionToWorld(WorldLocation, WorldDirection))
 	{
