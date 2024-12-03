@@ -11,10 +11,7 @@ ASpawnActor::ASpawnActor()
 {
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
-
-	// Set this actor to call Tick() every frame if necessary. You can turn this off if not needed.
-	PrimaryActorTick.bCanEverTick = false;
-
+	
 	// Create and attach the Spawn Orb
 	OrbMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SphereMesh"));
 	RootComponent = OrbMesh;
@@ -45,7 +42,7 @@ bool ASpawnActor::ShowSpawnMenu(bool bSetToggle)
 
 		// Menu Toggled to True
 		//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, FString::Printf(TEXT("%s Enable Spawn Menu"), *this->GetName()));
-		SpawnPoints(1200.0f, 25);
+		SpawnPoints(800.0f, 24);
 		return true;
 	}
     

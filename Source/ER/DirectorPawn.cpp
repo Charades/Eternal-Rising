@@ -132,7 +132,7 @@ void ADirectorPawn::EndMarqueeSelection()
 
 	if (SelectionWidget)
 	{
-		SelectionWidget->SetVisibility(ESlateVisibility::Hidden); // Hide instead of destroying
+		SelectionWidget->SetVisibility(ESlateVisibility::Hidden);
 	}
 	
 	FVector2D CurrentMousePosition;

@@ -557,7 +557,7 @@ void UFlowFieldMovement::ClearTargetEnemy()
 void UFlowFieldMovement::FindAndTargetNearbyEnemy()
 {
 	FVector Start = OwnerPawn->GetActorLocation();
-	Start.Z = 50.0f;
+	Start.Z = 25.0f;
     
 	float LineTraceDistance = 500.0f; // Adjust detection range as needed
 	FVector ForwardVector = OwnerPawn->GetActorRotation().Vector();
@@ -588,7 +588,6 @@ void UFlowFieldMovement::FindAndTargetNearbyEnemy()
 			if (ASurvivorPawn* SurvivorPawn = Cast<ASurvivorPawn>(HitResult.GetActor()))
 			{
 				SetTargetEnemy(SurvivorPawn);
-				OwnerPawn->PerformAttack(SurvivorPawn);
 			}
 		}
 	}
@@ -610,6 +609,7 @@ void UFlowFieldMovement::TickComponent(float DeltaTime, ELevelTick TickType, FAc
         // If enemy is close enough, perform attack
         if (DistanceToEnemy <= GoalAcceptanceDist)
         {
+        	CheckAndPerformAttack();
             Move = false;
             bDestinationReached = true;
         	OwnerPawn->PerformAttack(CurrentTargetEnemy);
