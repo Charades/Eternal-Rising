@@ -20,6 +20,9 @@ class ER_API AFlecsZombieBoid : public APawn
 	GENERATED_BODY()
 	
 public:
+	UFUNCTION()
+	void OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+	
 	AFlecsZombieBoid(const class FObjectInitializer& ObjectInitializer);
 
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadWrite, Category = "Movement")

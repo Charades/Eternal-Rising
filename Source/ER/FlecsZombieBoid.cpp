@@ -4,6 +4,7 @@
 
 #include "AIController.h"
 #include "AnimToTextureInstancePlaybackHelpers.h"
+#include "ProjectileActor.h"
 #include "SurvivorPawn.h"
 #include "ZombieMeshStruct.h"
 #include "Net/UnrealNetwork.h"
@@ -19,8 +20,9 @@ AFlecsZombieBoid::AFlecsZombieBoid(const class FObjectInitializer& ObjectInitial
 	RootComponent = InstancedStaticMeshComponent;
 	
 	InstancedStaticMeshComponent->SetRenderCustomDepth(true);
+	InstancedStaticMeshComponent->OnComponentHit.AddDynamic(this, &AFlecsZombieBoid::OnHit);
 
-	InstancedStaticMeshComponent->SetCollisionObjectType(ECollisionChannel::ECC_Pawn);
+	//InstancedStaticMeshComponent->SetCollisionObjectType(ECollisionChannel::ECC_Pawn);
 	
 	FloatingPawnMovement = CreateDefaultSubobject<UFloatingPawnMovement>(TEXT("FloatingPawnMovement"));
 	
@@ -187,5 +189,14 @@ void AFlecsZombieBoid::InitializeMeshInstances()
 	else
 	{
 		UE_LOG(LogTemp, Warning, TEXT("DataTable has no rows."));
+	}
+}
+
+void AFlecsZombieBoid::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
+	FVector NormalImpulse, const FHitResult& Hit)
+{
+	if (OtherActor->IsA(AProjectileActor::StaticClass()))
+	{
+		Destroy();
 	}
 }

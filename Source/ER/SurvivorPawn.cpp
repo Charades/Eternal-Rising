@@ -8,7 +8,6 @@
 // Sets default values
 ASurvivorPawn::ASurvivorPawn()
 {
-	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	bReplicates = true;
 
@@ -37,6 +36,7 @@ void ASurvivorPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 void ASurvivorPawn::InflictDamage(float DamageAmount)
 {
 	CurrentHealth = FMath::Max(0.0f, CurrentHealth - DamageAmount);
+	
 	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, 
 		FString::Printf(TEXT("Health: %.1f"), CurrentHealth));
 }
