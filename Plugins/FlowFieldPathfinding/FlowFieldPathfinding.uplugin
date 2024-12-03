@@ -1,0 +1,26 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.0",
+	"FriendlyName": "FlowFieldPathfinding",
+	"Description": "Flow Field System for single or multiple pathfinding units.",
+	"Category": "Code",
+	"CreatedBy": "Ludvig Köhn",
+	"CreatedByURL": "http://www.ludvigkohn.com/p/home_10.html",
+	"DocsURL": "https://drive.google.com/file/d/17ZfDdX6oK5boPeNmEkkQPLrlU8U_mwME/view",
+	"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/product/a2f73d822568406d87c94b6f47a86bcb",
+	"SupportURL": "https://github.com/SoggaAndBingus/FlowFieldPathfinding/issues",
+	"EngineVersion": "5.4.0",
+	"CanContainContent": true,
+	"Installed": true,
+	"Modules": [
+		{
+			"Name": "FlowFieldPathfinding",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"PlatformAllowList": [
+				"Win64"
+			]
+		}
+	]
+}
