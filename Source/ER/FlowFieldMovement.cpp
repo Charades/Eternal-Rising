@@ -102,8 +102,6 @@ FVector UFlowFieldMovement::GetWanderingDirection()
         UE_LOG(LogTemp, Warning, TEXT("FlowFieldActor is null in GetWanderingDirection"));
         return FVector::ZeroVector;
     }
-
-	FindAndTargetNearbyEnemy();
 	
     // Calculate grid boundaries
     float MinX = GoalPosition.X - WanderRadius;
@@ -243,6 +241,8 @@ FVector UFlowFieldMovement::GetWanderingDirection()
     //     5.0f    // Thickness
     // );
 
+	FindAndTargetNearbyEnemy();
+	
     return FinalDirection;
 }
 
@@ -309,17 +309,17 @@ void UFlowFieldMovement::ApplyMovementAndRotation(FVector DesiredDirection, floa
         }
 
         // Debug Line Trace Visualization
-        FColor LineColor = bHitObstacle ? FColor::Red : FColor::Green;
-         DrawDebugLine(
-             GetWorld(), 
-             Start, 
-             End, 
-             LineColor, 
-             false,  
-             -1.0f,  
-             0,      
-             2.0f    
-         );
+        // FColor LineColor = bHitObstacle ? FColor::Red : FColor::Green;
+        //  DrawDebugLine(
+        //      GetWorld(), 
+        //      Start, 
+        //      End, 
+        //      LineColor, 
+        //      false,  
+        //      -1.0f,  
+        //      0,      
+        //      2.0f    
+        //  );
     }
 
     // Calculate dynamic interpolation speed
@@ -672,6 +672,7 @@ void UFlowFieldMovement::TickComponent(float DeltaTime, ELevelTick TickType, FAc
         FVector DesiredDirection = (GoalPosition - OwnerPawn->GetActorLocation()).GetSafeNormal();
         
         // Apply movement towards enemy
+    	OwnerPawn->SetAnimation(0);
         ApplyMovementAndRotation(DesiredDirection, DeltaTime);
         return;
     }
@@ -684,9 +685,10 @@ void UFlowFieldMovement::TickComponent(float DeltaTime, ELevelTick TickType, FAc
         bDestinationReached = true;
     }
 
-    // Check neighbors' destination status when destination is reached
+    // Check neighbors destination status when destination is reached
     if (bDestinationReached)
     {
+    	OwnerPawn->SetAnimation(0);
         CheckNeighborsDestinationStatus();
     }
 
@@ -695,18 +697,18 @@ void UFlowFieldMovement::TickComponent(float DeltaTime, ELevelTick TickType, FAc
     if (Move)
     {
         // Original goal-seeking behavior
+    	OwnerPawn->SetAnimation(0);
         DesiredDirection = GetGoalSeekingDirection();
-        OwnerPawn->SetAnimation(0);
     }
     else if (bDestinationReached)
     {
         // Always allow wandering once destination is reached
+    	OwnerPawn->SetAnimation(0);
         DesiredDirection = GetWanderingDirection();
-        OwnerPawn->SetAnimation(0);
     }
     else
     {
-        return; // No movement
+        return;
     }
 
     // Apply movement and rotation

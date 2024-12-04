@@ -79,7 +79,7 @@ void AFlecsZombieBoid::BuildAutoPlayData(UAnimToTextureDataAsset* InDA, TArray<F
 	for (int32 i = 0; i < InstancedStaticMeshComponent->GetInstanceCount() - 1; i++)
 	{
 		FAnimToTextureAutoPlayData AutoPlayData;
-		UAnimToTextureInstancePlaybackLibrary::GetAutoPlayDataFromDataAsset(InDA, 4, AutoPlayData, 0.0f, 1.0f);
+		UAnimToTextureInstancePlaybackLibrary::GetAutoPlayDataFromDataAsset(InDA, i, AutoPlayData, 0.0f, 1.0f);
 		AutoPlayDataArray.Add(AutoPlayData);
 	}
 }
@@ -195,12 +195,36 @@ void AFlecsZombieBoid::InitializeMeshInstances()
 void AFlecsZombieBoid::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
 	FVector NormalImpulse, const FHitResult& Hit)
 {
-	if (OtherActor->IsA(AProjectileActor::StaticClass()))
+	ServerHandleHit(OtherActor);
+}
+
+void AFlecsZombieBoid::ServerHandleHit_Implementation(AActor* HitActor)
+{
+	if (HitActor && HitActor->IsA(AProjectileActor::StaticClass()))
 	{
-		if (UFlowFieldMovement* Movement = FindComponentByClass<UFlowFieldMovement>())
-		{
-			Movement->PrepareForDestruction();
-		}
-		Destroy();
+		MulticastHandleHit();
 	}
+}
+
+void AFlecsZombieBoid::MulticastHandleHit_Implementation()
+{
+	if (!IsPendingKillPending())
+	{
+		if (FlowFieldMovement)
+		{
+			FlowFieldMovement->Deactivate();
+			FlowFieldMovement->PrepareForDestruction();
+			FlowFieldMovement->DestroyComponent();
+		}
+
+		if (FloatingPawnMovement)
+		{
+			FloatingPawnMovement->Deactivate();
+			FloatingPawnMovement->StopMovementImmediately();
+		}
+	
+		SetAnimation(5);
+	}
+       
+	SetLifeSpan(1.2f);
 }

@@ -48,6 +48,12 @@ public:
 
 	UPROPERTY()
 	AActor* CurrentTarget;
+
+	UFUNCTION(Server, Reliable)
+	void ServerHandleHit(AActor* HitActor);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastHandleHit();
 	
 protected:
 	virtual void BeginPlay() override;

@@ -63,7 +63,7 @@ void UFlecsSubsystem::SpawnZombieHorde_Implementation(FVector SpawnLocation, flo
 
 		AFlecsZombieBoid* Test = GetWorld()->SpawnActor<AFlecsZombieBoid>(AFlecsZombieBoid::StaticClass(), PointLocation, FRotator::ZeroRotator, SpawnInfo);
 		
-		DrawDebugSphere(GetWorld(), PointLocation, 20.0f, 12, FColor::Red, false, 10.0f);
+		//DrawDebugSphere(GetWorld(), PointLocation, 20.0f, 12, FColor::Red, false, 10.0f);
 	}
 }
 
@@ -101,9 +101,9 @@ bool UFlecsSubsystem::EnsureFlowFieldActor()
     if (!FlowFieldActor)
     {
         FlowFieldActor = Cast<AFlowFieldWorld>(UGameplayStatics::GetActorOfClass(GetWorld(), AFlowFieldWorld::StaticClass()));
-        GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, 
-            FString::Printf(TEXT("FlecsSubsystem: FlowFieldActor found: %s"), 
-            FlowFieldActor ? TEXT("Yes") : TEXT("No")));
+        //GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, 
+        //    FString::Printf(TEXT("FlecsSubsystem: FlowFieldActor found: %s"), 
+        //    FlowFieldActor ? TEXT("Yes") : TEXT("No")));
     }
     return FlowFieldActor != nullptr;
 }
@@ -116,8 +116,8 @@ void UFlecsSubsystem::ServerInitiateMovement_Implementation(const FVector& Targe
 void UFlecsSubsystem::MulticastExecuteMovement_Implementation(const FVector& TargetLocation, bool bIsEnemyTarget, const TArray<AFlecsZombieBoid*>& Boids)
 {
     // Debug message to verify execution on all clients
-    GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Green, 
-        FString::Printf(TEXT("MulticastExecuteMovement on client/server. Boids: %d"), Boids.Num()));
+    //GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Green, 
+    //    FString::Printf(TEXT("MulticastExecuteMovement on client/server. Boids: %d"), Boids.Num()));
 
     if (!EnsureFlowFieldActor())
     {
@@ -140,8 +140,8 @@ void UFlecsSubsystem::MulticastExecuteMovement_Implementation(const FVector& Tar
     FlowFieldActor->GenerateFlowField(FlowFieldActor->GridCells, TargetLocation, DirectionMap, GoalPosition);
 
     // Debug message for flow field generation
-    GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, 
-        FString::Printf(TEXT("Generated flow field. Goal: %s"), *GoalPosition.ToString()));
+    //GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, 
+    //    FString::Printf(TEXT("Generated flow field. Goal: %s"), *GoalPosition.ToString()));
 
     // Update movement for each boid
     for (AFlecsZombieBoid* Boid : Boids)

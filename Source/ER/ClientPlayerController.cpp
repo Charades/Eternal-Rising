@@ -322,7 +322,7 @@ void AClientPlayerController::SpawnActors()
 			}
 
 			// Just a useful visual that is needed for now
-			DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 1.0f, 0, 1.0f);
+			//DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 1.0f, 0, 1.0f);
 		}
 	}
 }

@@ -123,7 +123,7 @@ void ADirectorPawn::StartMarqueeSelection()
 		PC->SetInputMode(FInputModeGameAndUI().SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock).SetHideCursorDuringCapture(false));
 	}
 
-	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("Drag started!"));
+	//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("Drag started!"));
 }
 
 void ADirectorPawn::EndMarqueeSelection()
@@ -148,7 +148,7 @@ void ADirectorPawn::EndMarqueeSelection()
 	FVector2D BottomRight(FMath::Max(InitialMousePosition.X, CurrentMousePosition.X), FMath::Max(InitialMousePosition.Y, CurrentMousePosition.Y));
 	
 	PerformSelection(TopLeft, BottomRight);
-	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("Drag ended!"));
+	//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("Drag ended!"));
 }
 
 void ADirectorPawn::PerformSelection(const FVector2D& TopLeft, const FVector2D& BottomRight)
@@ -205,13 +205,13 @@ void ADirectorPawn::PerformSelection(const FVector2D& TopLeft, const FVector2D& 
     					if (UFlowFieldMovement* MovementComponent = Pawn->FlowFieldMovement)
     					{
     						SelectedPawnMovements.Add(MovementComponent);
-    						GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, 
-								FString::Printf(TEXT("Added Movement Component from Pawn: %s"), *Pawn->GetName()));
+    						//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, 
+							//	FString::Printf(TEXT("Added Movement Component from Pawn: %s"), *Pawn->GetName()));
     					}
     					else
     					{
-    						GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, 
-								FString::Printf(TEXT("No FlowFieldMovement Component found in Pawn: %s"), *Pawn->GetName()));
+    						//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, 
+							//	FString::Printf(TEXT("No FlowFieldMovement Component found in Pawn: %s"), *Pawn->GetName()));
     					}
     				}
     			}
@@ -220,18 +220,18 @@ void ADirectorPawn::PerformSelection(const FVector2D& TopLeft, const FVector2D& 
     }
 
     // Debug visualization remains the same
-    for (APawn* SelectedPawn : SelectedPawns)
-    {
-        DrawDebugBox(
-            World,
-            SelectedPawn->GetActorLocation(),
-            FVector(50.0f),
-            FQuat::Identity,
-            FColor::Green,
-            false,
-            1.0f
-        );
-    }
+    // for (APawn* SelectedPawn : SelectedPawns)
+    // {
+    //     DrawDebugBox(
+    //         World,
+    //         SelectedPawn->GetActorLocation(),
+    //         FVector(50.0f),
+    //         FQuat::Identity,
+    //         FColor::Green,
+    //         false,
+    //         1.0f
+    //     );
+    // }
 }
 
 bool ADirectorPawn::ServerMoveToLocation_Validate(const FVector& TargetLocation, bool bIsEnemyTarget, const TArray<APawn*>& Pawns, const TArray<UFlowFieldMovement*>& PawnMovements)
@@ -242,7 +242,7 @@ bool ADirectorPawn::ServerMoveToLocation_Validate(const FVector& TargetLocation,
 void ADirectorPawn::ServerMoveToLocation_Implementation(const FVector& TargetLocation, bool bIsEnemyTarget, const TArray<APawn*>& Pawns, const TArray<UFlowFieldMovement*>& PawnMovements)
 {
 	// Add debug message to verify server execution
-	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Green, FString::Printf(TEXT("Server: Move to location called")));
+	//GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Green, FString::Printf(TEXT("Server: Move to location called")));
     
 	MulticastPrepareMovement(TargetLocation, bIsEnemyTarget, Pawns, PawnMovements);
 }
@@ -255,9 +255,9 @@ bool ADirectorPawn::EnsureFlowFieldActor()
 		FlowFieldActor = Cast<AFlowFieldWorld>(UGameplayStatics::GetActorOfClass(GetWorld(), AFlowFieldWorld::StaticClass()));
         
 		// Debug message about the attempt
-		GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, 
-			FString::Printf(TEXT("EnsureFlowFieldActor result: %s"), 
-			FlowFieldActor ? TEXT("Found") : TEXT("Not Found")));
+		//GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, 
+		//	FString::Printf(TEXT("EnsureFlowFieldActor result: %s"), 
+		//	FlowFieldActor ? TEXT("Found") : TEXT("Not Found")));
 	}
     
 	return FlowFieldActor != nullptr;
@@ -268,8 +268,8 @@ void ADirectorPawn::MulticastPrepareMovement_Implementation(const FVector& Targe
     // Add debug message to verify client execution
     if (!HasAuthority())
     {
-        GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Blue, 
-            FString::Printf(TEXT("Client: Multicast received. Pawns: %d"), Pawns.Num()));
+        //GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Blue, 
+        //    FString::Printf(TEXT("Client: Multicast received. Pawns: %d"), Pawns.Num()));
     }
 
 	TArray<APawn*> ValidPawns;
@@ -305,10 +305,10 @@ void ADirectorPawn::MulticastPrepareMovement_Implementation(const FVector& Targe
         FlowFieldActor->GenerateFlowField(FlowFieldActor->GridCells, StartPosition, DirectionMap, GoalPosition);
 
         // Debug message for flow field generation
-        GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, 
-            FString::Printf(TEXT("Generated flow field. Goal: %s"), *GoalPosition.ToString()));
+        //GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, 
+        //    FString::Printf(TEXT("Generated flow field. Goal: %s"), *GoalPosition.ToString()));
 
-        for (UFlowFieldMovement* Movement : PawnMovements)
+        for (UFlowFieldMovement* Movement : ValidMovements)
         {
             if (Movement)
             {
@@ -369,8 +369,8 @@ void ADirectorPawn::MoveToLocation()
 			ObjectQueryParams.AddObjectTypesToQuery(ECC_Pawn);
 
 			// Debug message for initial call
-			GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::White, 
-				FString::Printf(TEXT("MoveToLocation called. Selected Pawns: %d"), SelectedPawns.Num()));
+			//GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::White, 
+			//	FString::Printf(TEXT("MoveToLocation called. Selected Pawns: %d"), SelectedPawns.Num()));
 
 			if (GetWorld()->LineTraceMultiByObjectType(HitResults, Start, End, ObjectQueryParams, QueryParams))
 			{
